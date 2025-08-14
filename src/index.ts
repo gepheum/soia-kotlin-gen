@@ -2,12 +2,11 @@
 // TODO: equals, hashCode, toString
 // TODO: name conflicts:
 //   - careful about 'soia' or 'kotlin' or 'soiagen' as param name...
-//   - Deprecated, Suppress, etc.
 // TODO: mutableGetter
+// TODO: serializers...
 import { getClassName } from "./class_speller.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
-  convertCase,
   type CodeGenerator,
   type Constant,
   type Method,
@@ -15,6 +14,7 @@ import {
   type RecordKey,
   type RecordLocation,
   type ResolvedType,
+  convertCase,
 } from "soiac";
 import { z } from "zod";
 
@@ -117,9 +117,11 @@ class KotlinSourceFileGenerator {
     this.push(`sealed interface ${className.name}_OrMutable {\n`);
     this.push(`  fun toFrozen(): ${qualifiedName};\n`);
     this.push("}\n\n");
-    this.push('@Suppress("UNUSED_PARAMETER")\n');
+    this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
     this.push(`class ${className.name}_Mutable(\n`);
-    this.push("_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
+    this.push(
+      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+    );
     for (const field of fields) {
       const allRecordsFrozen = !!field.isRecursive;
       const type = typeSpeller.getKotlinType(
@@ -142,7 +144,7 @@ class KotlinSourceFileGenerator {
     }
     this.push(`);\n`);
     this.push("}\n\n");
-    this.push('@Suppress("UNUSED_PARAMETER")\n');
+    this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
     this.push(`class ${className.name} private constructor(\n`);
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "frozen");
@@ -162,7 +164,9 @@ class KotlinSourceFileGenerator {
     }
     this.pushEol();
     this.push("constructor(\n");
-    this.push("_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
+    this.push(
+      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+    );
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       this.push(`${field.name.text}: ${type},\n`);
@@ -174,15 +178,19 @@ class KotlinSourceFileGenerator {
     }
     this.push(") {}\n\n");
 
-    this.push('@Deprecated("Already frozen")\n');
+    this.push('@kotlin.Deprecated("Already frozen")\n');
     this.push("override fun toFrozen() = this;\n\n");
 
     if (fields.length) {
       this.push("fun copy(\n");
-      this.push("_mustNameArguments: _MustNameArguments = _MustNameArguments,\n");
+      this.push(
+        "_mustNameArguments: _MustNameArguments = _MustNameArguments,\n",
+      );
       for (const field of fields) {
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
-        this.push(`  ${field.name.text}: ${type} =\nthis.${field.name.text},\n`);
+        this.push(
+          `  ${field.name.text}: ${type} =\nthis.${field.name.text},\n`,
+        );
       }
       this.push(`) = ${qualifiedName}(\n`);
       for (const field of fields) {
@@ -191,10 +199,11 @@ class KotlinSourceFileGenerator {
       }
       this.push(");\n\n");
 
-      this.push('@Deprecated("No point in creating an exact copy of an immutable object")\n');
+      this.push(
+        '@kotlin.Deprecated("No point in creating an exact copy of an immutable object")\n',
+      );
       this.push("fun copy() = copy(_MustNameArguments)\n\n");
     }
-
 
     this.push("companion object {\n");
     this.push("val DEFAULT =\n");
@@ -209,7 +218,9 @@ class KotlinSourceFileGenerator {
     }
     this.push(");\n\n");
     this.push("fun partial(\n");
-    this.push("_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
+    this.push(
+      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+    );
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       const defaultExpr = this.getDefaultExpression(field.type!);
@@ -222,10 +233,16 @@ class KotlinSourceFileGenerator {
     this.push(");\n\n");
 
     this.push("fun mutable(\n");
-    this.push("_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
+    this.push(
+      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+    );
     for (const field of fields) {
       const allRecordsFrozen = !!field.isRecursive;
-      const type = typeSpeller.getKotlinType(field.type!, "maybe-mutable", allRecordsFrozen);
+      const type = typeSpeller.getKotlinType(
+        field.type!,
+        "maybe-mutable",
+        allRecordsFrozen,
+      );
       const defaultExpr = this.getDefaultExpression(field.type!);
       this.push(`${field.name.text}: ${type} =\n${defaultExpr},\n`);
     }
@@ -259,9 +276,15 @@ class KotlinSourceFileGenerator {
       this.push(`object ${constField.name.text} : ${className.name}() {}\n`);
     }
     for (const valueField of valueFields) {
-      const wrapClassName = "wrap" + convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      const initializerType = typeSpeller.getKotlinType(valueField.type!, "initializer").toString();
-      const frozenType = typeSpeller.getKotlinType(valueField.type!, "initializer").toString();
+      const wrapClassName =
+        "wrap" +
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      const initializerType = typeSpeller
+        .getKotlinType(valueField.type!, "initializer")
+        .toString();
+      const frozenType = typeSpeller
+        .getKotlinType(valueField.type!, "initializer")
+        .toString();
       this.pushEol();
       if (initializerType === frozenType) {
         this.push(`class ${wrapClassName}(\n`);
