@@ -1,0 +1,5 @@
+__pycache__
+dist
+node_modules
+soiagen
+tsconfig.tsbuildinfo
