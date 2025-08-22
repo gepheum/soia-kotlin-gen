@@ -1,14 +1,15 @@
 // TODO: field names
+//   - wrappers around the fields
 // TODO: equals, hashCode, toString
 // TODO: name conflicts:
 //   - careful about 'soia' or 'kotlin' or 'soiagen' as param name...
-// TODO: mutableGetter
 // TODO: serializers...
 import { getClassName } from "./class_speller.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
   type CodeGenerator,
   type Constant,
+  Field,
   type Method,
   type Module,
   type RecordKey,
@@ -96,14 +97,13 @@ class KotlinSourceFileGenerator {
   private writeClassesForRecords(
     recordLocations: readonly RecordLocation[],
   ): void {
-    const { recordMap } = this.typeSpeller;
     for (const record of recordLocations) {
       const { recordType } = record.record;
       this.pushEol();
       if (recordType === "struct") {
         this.writeClassesForStruct(record);
       } else {
-        this.writeClassForEnum(record);
+        this.writeClassesForEnum(record);
       }
     }
   }
@@ -138,11 +138,7 @@ class KotlinSourceFileGenerator {
       this.push(`${field.name.text} = this.${field.name.text},\n`);
     }
     this.push(`);\n\n`);
-    this.push(`fun toMutable() = ${qualifiedName}_Mutable(\n`);
-    for (const field of fields) {
-      this.push(`    ${field.name.text} = this.${field.name.text},\n`);
-    }
-    this.push(`);\n`);
+    this.writeMutableGetters(fields);
     this.push("}\n\n");
     this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
     this.push(`class ${className.name} private constructor(\n`);
@@ -180,6 +176,12 @@ class KotlinSourceFileGenerator {
 
     this.push('@kotlin.Deprecated("Already frozen")\n');
     this.push("override fun toFrozen() = this;\n\n");
+
+    this.push(`fun toMutable() = ${qualifiedName}_Mutable(\n`);
+    for (const field of fields) {
+      this.push(`    ${field.name.text} = this.${field.name.text},\n`);
+    }
+    this.push(`);\n\n`);
 
     if (fields.length) {
       this.push("fun copy(\n");
@@ -262,18 +264,87 @@ class KotlinSourceFileGenerator {
     this.push("}\n\n");
   }
 
-  private writeClassForEnum(record: RecordLocation): void {
+  private writeMutableGetters(fields: readonly Field[]): void {
+    const {typeSpeller} = this;
+    for (const field of fields) {
+      if (field.isRecursive) {
+        continue;
+      }
+      const type = field.type!;
+      const fieldName = field.name.text;
+      const mutableGetterName =
+        "mutable" +
+        convertCase(fieldName, "lower_underscore", "UpperCamel");
+      const mutableType = typeSpeller.getKotlinType(field.type!, "mutable");
+      const accessor = `this.${fieldName}`;
+      let bodyLines: string[] = [];
+      if (type.kind === "array") {
+          bodyLines = [
+            "return when (value) {\n",
+            "is soia.internal.MutableList -> value;\n",
+            "else -> {\n",
+            "value = soia.internal.MutableList(value);\n",
+            `${accessor} = value;\n`,
+            "value;\n",
+            "}\n",
+            "}\n",
+          ];
+      } else if (type.kind === "record") {
+        const record = this.typeSpeller.recordMap.get(type.key)!;
+        if (record.record.recordType === "struct") {
+          const structQualifiedName = getClassName(record).qualifiedName;
+          bodyLines = [
+            "return when (value) {\n",
+            `is ${structQualifiedName} -> {\n`,
+            "value = value.toMutable();\n",
+            `${accessor} = value;\n`,
+            "return value;\n",
+            "}\n",
+            `is ${structQualifiedName}_Mutable -> value;\n`,
+            "}\n",
+          ];
+        }
+      }
+      if (bodyLines.length) {
+        this.push(`val ${mutableGetterName}: ${mutableType} get {\n`);
+        this.push(`var value = ${accessor};\n`);
+        for (const line of bodyLines) {
+          this.push(line);
+        }
+        this.push("}\n\n");
+      }
+    }
+  }
+
+  private writeClassesForEnum(record: RecordLocation): void {
     const { typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = record.record;
     const constantFields = fields.filter((f) => !f.type);
     const valueFields = fields.filter((f) => f.type);
     const className = getClassName(record);
-    // const { qualifiedName } = className;
+    this.push(`enum class ${className.name}_Kind {\n`);
+    this.push(`CONST_UNKNOWN,\n`);
+    for (const field of constantFields) {
+      this.push(`CONST_${field.name.text},\n`);
+    }
+    for (const field of valueFields) {
+      this.push(
+        `VAL_${convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE")},\n`,
+      );
+    }
+    this.push("}\n\n");
     this.push(`sealed class ${className.name} {\n`);
-    this.push(`object UNKNOWN : ${className.name}() {}\n`);
+    this.push(`object UNKNOWN : ${className.name}() {\n`);
+    this.push(
+      `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n`,
+    );
+    this.push("}\n\n");
     for (const constField of constantFields) {
-      this.push(`object ${constField.name.text} : ${className.name}() {}\n`);
+      this.push(`object ${constField.name.text} : ${className.name}() {\n`);
+      const kindExpr = `${className.name}_Kind.CONST_${constField.name.text}`;
+      this.push(`override val kind get() = ${kindExpr};\n`);
+      this.push(`}\n\n`);
     }
     for (const valueField of valueFields) {
       const wrapClassName =
@@ -289,15 +360,56 @@ class KotlinSourceFileGenerator {
       if (initializerType === frozenType) {
         this.push(`class ${wrapClassName}(\n`);
         this.push(`val value: ${initializerType}\n`);
-        this.push(`) : ${className.name}() {}\n`);
+        this.push(`) : ${className.name}() {\n`);
       } else {
         this.push(`class ${wrapClassName} private constructor (`);
         this.push(`val value: ${initializerType}\n`);
         this.push(`) : ${className.name}() {\n`);
-        this.push(`constructor(value: ${initializerType}): this(value) {}\n`);
-        this.push("}\n");
+        this.push(`constructor(value: ${initializerType}): this(value) {\n`);
       }
+      const kindExpr = `${className.name}_Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
+      this.push(`override val kind get() = ${kindExpr};\n`);
+      this.push("}\n\n");
     }
+
+    this.push(`abstract val kind: ${className.name}_Kind;\n\n`);
+
+    this.push("companion object {\n");
+    for (const valueField of valueFields) {
+      const type = valueField.type!;
+      if (type.kind !== "record") {
+        continue;
+      }
+      const structLocation = typeSpeller.recordMap.get(type.key)!;
+      const struct = structLocation.record;
+      if (struct.recordType !== "struct") {
+        continue;
+      }
+      const structClassName = getClassName(structLocation);
+      const createFunName =
+        "create" +
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      const wrapFunName =
+        "wrap" +
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
+      this.push(`fun ${createFunName}(\n`);
+      this.push(
+        "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+      );
+      for (const field of struct.fields) {
+        const type = typeSpeller.getKotlinType(field.type!, "initializer");
+        this.push(`${field.name.text}: ${type},\n`);
+      }
+      this.push(`) = ${wrapFunName}(\n`);
+      this.push(`${structClassName.qualifiedName}(\n`);
+      for (const field of struct.fields) {
+        this.push(`${field.name.text} = ${field.name.text},\n`);
+      }
+      this.push(")\n");
+      this.push(");\n\n");
+    }
+    this.push("}\n\n");
 
     // Write the classes for the records nested in `record`.
     const nestedRecords = record.record.nestedRecords.map(
@@ -305,83 +417,6 @@ class KotlinSourceFileGenerator {
     );
     this.writeClassesForRecords(nestedRecords);
     this.push("}\n\n");
-    // this.pushLine("@typing.final");
-    // this.pushLine(`class ${className.name}:`);
-    // this.pushLine(`UNKNOWN: typing.Final["${qualifiedName}"] = _`);
-    // for (const constantField of constantFields) {
-    //   const attribute = enumValueFieldToAttr(constantField.name.text);
-    //   this.pushLine(`${attribute}: typing.Final["${qualifiedName}"] = _`);
-    // }
-    // for (const valueField of valueFields) {
-    //   const name = valueField.name.text;
-    //   const type = valueField.type!;
-    //   const kotlinType = typeSpeller.getKotlinType(type, "initializer");
-    //   this.pushLine();
-    //   this.pushLine("@staticmethod");
-    //   this.pushLine(
-    //     `def wrap_${name}(value: ${pyType}) -> "${qualifiedName}": ...`,
-    //   );
-    //   if (type.kind === "record") {
-    //     const { record } = typeSpeller.recordMap.get(type.key)!;
-    //     if (record.recordType === "struct") {
-    //       this.pushLine();
-    //       this.pushLine("@staticmethod");
-    //       this.pushLine(`def create_${name}(`);
-    //       this.writeStructFieldsAsParams(record, "initializer", "no-default");
-    //       this.pushLine(`) -> "${qualifiedName}": ...`);
-    //     }
-    //   }
-    // }
-    // this.pushLine();
-    // this.pushLine("def __init__(self, _: typing.NoReturn): ...");
-    // if (fields.length === 0) {
-    //   return;
-    // }
-    // this.pushLine();
-    // {
-    //   const kindTypeArgs = ['"?"']
-    //     .concat(fields.map((f) => `"${f.name.text}"`))
-    //     .join(", ");
-    //   this.pushLine(`Kind: typing.TypeAlias = typing.Literal[${kindTypeArgs}]`);
-    // }
-    // {
-    //   const kindType = PyType.quote(`${qualifiedName}.Kind`);
-    //   this.pushLine();
-    //   this.pushLine("@property");
-    //   this.pushLine(`def kind(self) -> ${kindType}: ...`);
-    // }
-    // {
-    //   const typesInUnion: PyType[] = valueFields.map((f) =>
-    //     typeSpeller.getKotlinType(f.type!, "frozen"),
-    //   );
-    //   typesInUnion.push(PyType.NONE);
-    //   const valueType = PyType.union(typesInUnion);
-    //   this.pushLine();
-    //   this.pushLine("@property");
-    //   this.pushLine(`def value(self) -> ${valueType}: ...`);
-    // }
-    // {
-    //   const getVariantType = (name: string) =>
-    //     PyType.quote(`${qualifiedName}._${name}`);
-    //   const typesInUnion = [getVariantType("Unknown")].concat(
-    //     fields.map((f) => getVariantType(f.name.text)),
-    //   );
-    //   this.pushLine();
-    //   this.pushLine("@property");
-    //   this.pushLine(`def union(self) -> ${PyType.union(typesInUnion)}: ...`);
-    // }
-    // this.writeVariantClass("Unknown", PyType.NONE, "?");
-    // for (const field of fields) {
-    //   const fieldName = field.name.text;
-    //   const valueType = field.type
-    //     ? typeSpeller.getKotlinType(field.type, "frozen")
-    //     : PyType.NONE;
-    //   this.writeVariantClass(fieldName, valueType);
-    // }
-    // this.pushLine();
-    // this.pushLine(
-    //   `SERIALIZER: typing.Final[soia.Serializer["${qualifiedName}"]] = _`,
-    // );
   }
 
   private writeMethod(method: Method): void {
@@ -457,10 +492,19 @@ class KotlinSourceFileGenerator {
           case "bytes":
             return "kotlin.byteArrayOf()";
         }
-        break;
       }
       case "array": {
-        return "soia.internal.frozenListOf()";
+        const itemType = this.typeSpeller.getKotlinType(type.item, "frozen");
+        if (type.key) {
+          const { keyType } = type.key;
+          let kotlinKeyType = this.typeSpeller.getKotlinType(keyType, "frozen");
+          if (keyType.kind === "record") {
+            kotlinKeyType += "_Kind";
+          }
+          return `soia.internal.emptyIndexedList<${itemType}, ${kotlinKeyType}>()`;
+        } else {
+          return `soia.internal.emptyFrozenList<${itemType}>()`;
+        }
       }
       case "optional": {
         return "null";
@@ -488,10 +532,19 @@ class KotlinSourceFileGenerator {
       }
       case "array": {
         const itemToFrozenExpr = this.toFrozenExpression("it", type.item);
-        if (itemToFrozenExpr === "it") {
-          return `soia.internal.toFrozenList(${inputExpr})`;
+        if (type.key) {
+          const path = type.key.path.map((f) => f.name.text).join(".");
+          if (itemToFrozenExpr === "it") {
+            return `soia.internal.toIndexedList(${inputExpr}, "${path}", { it.${path} })`;
+          } else {
+            return `soia.internal.toIndexedList(${inputExpr}, "${path}", { it.${path} }, { ${itemToFrozenExpr} })`;
+          }
         } else {
-          return `soia.internal.toFrozenList(${inputExpr}) { ${itemToFrozenExpr} }`;
+          if (itemToFrozenExpr === "it") {
+            return `soia.internal.toFrozenList(${inputExpr})`;
+          } else {
+            return `soia.internal.toFrozenList(${inputExpr}, { ${itemToFrozenExpr} })`;
+          }
         }
       }
       case "optional": {

@@ -94,7 +94,16 @@ export class TypeSpeller {
             "frozen",
             allRecordsFrozen,
           );
-          return `kotlin.collections.List<${itemType}>`;
+          if (type.key) {
+            const { keyType } = type.key;
+            let kotlinKeyType = this.getKotlinType(keyType, "frozen");
+            if (keyType.kind === "record") {
+              kotlinKeyType += "_Kind";
+            }
+            return `soia.IndexedList<${itemType}, ${kotlinKeyType}>`;
+          } else {
+            return `kotlin.collections.List<${itemType}>`;
+          }
         } else if (flavor === "maybe-mutable") {
           const itemType = this.getKotlinType(
             type.item,
@@ -120,10 +129,6 @@ export class TypeSpeller {
           flavor,
           allRecordsFrozen,
         );
-        if (flavor === "mutable") {
-          // The generated mutableX() methods cannot return null.
-          return otherType;
-        }
         return `${otherType}?`;
       }
       case "primitive": {
