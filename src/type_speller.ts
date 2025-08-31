@@ -100,7 +100,7 @@ export class TypeSpeller {
             if (keyType.kind === "record") {
               kotlinKeyType += "_Kind";
             }
-            return `soia.IndexedList<${itemType}, ${kotlinKeyType}>`;
+            return `soia.KeyedList<${itemType}, ${kotlinKeyType}>`;
           } else {
             return `kotlin.collections.List<${itemType}>`;
           }

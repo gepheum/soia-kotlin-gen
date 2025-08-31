@@ -1,5 +1,9 @@
-srcDir: ./src
+srcDir: ./soia-src
 
 generators:
   - mod: ../../../dist/index.js
     config: {}
+
+mirroredSoiagenDirs:
+  - path: src/main/kotlin/soiagen
+    fileRegex: "\\.kt$"
