@@ -14,7 +14,7 @@ fun <E> listSerializer(item: Serializer<E>): Serializer<List<E>> {
     return Serializer(ListSerializer(item.impl))
 }
 
-fun <E, K> KeyedListSerializer(
+fun <E, K> keyedListSerializer(
     item: Serializer<E>,
     getKeySpec: String,
     getKey: (E) -> K,

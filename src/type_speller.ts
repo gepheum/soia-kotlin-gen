@@ -161,4 +161,59 @@ export class TypeSpeller {
     const record = this.recordMap.get(recordKey)!;
     return getClassName(record);
   }
+
+  getSerializerExpression(type: ResolvedType): string {
+    switch (type.kind) {
+      case "primitive": {
+        switch (type.primitive) {
+          case "bool":
+            return "soia.Serializers.bool";
+          case "int32":
+            return "soia.Serializers.int32";
+          case "int64":
+            return "soia.Serializers.int64";
+          case "uint64":
+            return "soia.Serializers.uint64";
+          case "float32":
+            return "soia.Serializers.float32";
+          case "float64":
+            return "soia.Serializers.float64";
+          case "timestamp":
+            return "soia.Serializers.instant";
+          case "string":
+            return "soia.Serializers.string";
+          case "bytes":
+            return "soia.Serializers.bytes";
+        }
+        const _: never = type.primitive;
+        throw TypeError();
+      }
+      case "array": {
+        if (type.key) {
+          const path = type.key.path.map((f) => f.name.text).join(".");
+          return (
+            "soia.internal.keyedListSerializer(\n" +
+            this.getSerializerExpression(type.item) +
+            `,\n"${path}",\n{ it.${path} },\n)`
+          );
+        } else {
+          return (
+            "soia.Serializers.list(\n" +
+            this.getSerializerExpression(type.item) +
+            ",\n)"
+          );
+        }
+      }
+      case "optional": {
+        return (
+          `soia.Serializers.optional(\n` +
+          this.getSerializerExpression(type.other) +
+          `,\n)`
+        );
+      }
+      case "record": {
+        return this.getClassName(type.key).qualifiedName + ".SERIALIZER";
+      }
+    }
+  }
 }

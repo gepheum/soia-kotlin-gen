@@ -281,6 +281,18 @@ class KotlinSourceFileGenerator {
     this.push(");\n\n");
     this.push("val SERIALIZER = soia.Serializer(serializerImpl);\n\n");
     this.push("init {\n");
+    for (const field of fields) {
+      this.push("serializerImpl.addField(\n");
+      this.push(`"${field.name.text}",\n`);
+      this.push(`${field.number},\n`);
+      this.push(`${typeSpeller.getSerializerExpression(field.type!)},\n`);
+      this.push(`{ it.${field.name.text} },\n`);
+      this.push(`{ mut, v -> mut.${field.name.text} = v },\n`);
+      this.push(");\n");
+    }
+    for (const removedNumber of struct.record.removedNumbers) {
+      this.push(`serializerImpl.addRemovedNumber(${removedNumber});\n`);
+    }
     this.push("serializerImpl.finalizeStruct();\n");
     this.push("}\n");
     this.push("}\n");
