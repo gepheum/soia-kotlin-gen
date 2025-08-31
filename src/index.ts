@@ -72,7 +72,7 @@ class KotlinSourceFileGenerator {
     this.push(this.inModule.path.replace(/\.soia$/, "").replace("/", "."));
     this.push(";\n\n");
     this.push(
-      "import soia.internal.MustNameArguments as _MustNameArguments;\n\n",
+      "import soia.internal.MustNameArguments as _MustNameArguments;\n",
     );
     this.push(
       "import soia.internal.UnrecognizedFields as _UnrecognizedFields;\n\n",
@@ -476,43 +476,16 @@ class KotlinSourceFileGenerator {
   }
 
   private writeConstant(constant: Constant): void {
-    // const { typeSpeller } = this;
-    // const name = constant.name.text;
-    // const type = typeSpeller.getKotlinType(constant.type!, "frozen");
-    // this.pushLine();
-    // this.pushLine(`${name}: typing.Final[${type}] = _`);
+    const { typeSpeller } = this;
+    const name = constant.name.text;
+    const type = typeSpeller.getKotlinType(constant.type!, "frozen");
+    const serializerExpression = typeSpeller.getSerializerExpression(constant.type!);
+    const jsonStringLiteral = JSON.stringify(JSON.stringify(constant.valueAsDenseJson))
+    this.push(`val ${name}: ${type} = (\n`);
+    this.push(serializerExpression)
+    this.push(`.fromJsonCode(${jsonStringLiteral})\n`);
+    this.push(");\n\n");
   }
-
-  // private typeToSpec(type: ResolvedType): string {
-  // switch (type.kind) {
-  //   case "array": {
-  //     const itemSpec = this.typeToSpec(type.item);
-  //     let keyArg = "";
-  //     if (type.key) {
-  //       const attributes = type.key.path
-  //         .map((n) => `"${structFieldToAttr(n.name.text)}", `)
-  //         .join("")
-  //         .trimEnd();
-  //       keyArg = `, (${attributes})`;
-  //     }
-  //     return `_spec.ArrayType(${itemSpec}${keyArg})`;
-  //   }
-  //   case "optional": {
-  //     const otherSpec = this.typeToSpec(type.other);
-  //     return `_spec.OptionalType(${otherSpec})`;
-  //   }
-  //   case "primitive":
-  //     return `_spec.PrimitiveType.${type.primitive.toUpperCase()}`;
-  //   case "record": {
-  //     const record = this.typeSpeller.recordMap.get(type.key)!;
-  //     const { recordAncestors, modulePath } = record;
-  //     const recordQualname = recordAncestors
-  //       .map((r) => r.name.text)
-  //       .join(".");
-  //     return `"${modulePath}:${recordQualname}"`;
-  //   }
-  // }
-  // }
 
   private getDefaultExpression(type: ResolvedType): string {
     switch (type.kind) {

@@ -1,6 +1,7 @@
 .gradle
 .idea
 __pycache__
+build
 dist
 node_modules
 soiagen
