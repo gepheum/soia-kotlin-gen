@@ -461,16 +461,18 @@ class KotlinSourceFileGenerator {
   }
 
   private writeMethod(method: Method): void {
-    // const { typeSpeller } = this;
-    // const methodName = method.name.text;
-    // const varName = PY_UPPER_CAMEL_KEYWORDS.has(methodName)
-    //   ? `${methodName}_`
-    //   : methodName;
-    // const requestType = typeSpeller.getKotlinType(method.requestType!, "frozen");
-    // const responseType = typeSpeller.getKotlinType(method.responseType!, "frozen");
-    // const methodType = `soia.Method[${requestType}, ${responseType}]`;
-    // this.pushLine();
-    // this.pushLine(`${varName}: typing.Final[${methodType}] = _`);
+    const { typeSpeller } = this;
+    const methodName = method.name.text;
+    const requestType = typeSpeller.getKotlinType(method.requestType!, "frozen");
+    const requestSerializerExpr = typeSpeller.getSerializerExpression(method.requestType!);
+    const responseType = typeSpeller.getKotlinType(method.responseType!, "frozen");
+    const responseSerializerExpr = typeSpeller.getSerializerExpression(method.responseType!);
+    this.push(`val ${methodName}: soia.Method<\n${requestType},\n${responseType},\n> = soia.Method(\n`);
+    this.push(`"${methodName}",\n`);
+    this.push(`${method.number},\n`);
+    this.push(requestSerializerExpr + ",\n");
+    this.push(responseSerializerExpr + ",\n");
+    this.push(");\n\n");
   }
 
   private writeConstant(constant: Constant): void {
