@@ -151,7 +151,7 @@ export class TypeSpeller {
           case "string":
             return "String";
           case "bytes":
-            return "kotlin.ByteArray";
+            return "okio.ByteString";
         }
       }
     }

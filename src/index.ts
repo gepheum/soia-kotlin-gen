@@ -3,7 +3,11 @@
 // TODO: equals, hashCode, toString
 // TODO: name conflicts:
 //   - careful about 'soia' or 'kotlin' or 'soiagen' as param name...
+//   - class name conflict if a nested record in an enum is named Unknown or Wrap...
 // TODO: serializers...
+// TODO: possibility to specify package prefix after soiagen
+// TODO: make this.push expect possibly a vararg of strings
+// TODO: use emoji prefix instead of underscore for internal symbols?
 import { getClassName } from "./class_speller.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
@@ -77,6 +81,9 @@ class KotlinSourceFileGenerator {
     this.push(
       "import soia.internal.UnrecognizedFields as _UnrecognizedFields;\n\n",
     );
+    this.push(
+      "import soia.internal.UnrecognizedEnum as _UnrecognizedEnum;\n\n",
+    );
 
     this.writeClassesForRecords(
       this.inModule.records.filter(
@@ -121,7 +128,7 @@ class KotlinSourceFileGenerator {
     this.push(`fun toFrozen(): ${qualifiedName};\n`);
     this.push("}\n\n");
     this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
-    this.push(`class ${className.name}_Mutable(\n`);
+    this.push(`class ${className.name}_Mutable internal constructor(\n`);
     this.push(
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
@@ -364,6 +371,7 @@ class KotlinSourceFileGenerator {
     const constantFields = fields.filter((f) => !f.type);
     const valueFields = fields.filter((f) => f.type);
     const className = getClassName(record);
+    const qualifiedName = className.qualifiedName;
     this.push(`enum class ${className.name}_Kind {\n`);
     this.push(`CONST_UNKNOWN,\n`);
     for (const field of constantFields) {
@@ -376,11 +384,21 @@ class KotlinSourceFileGenerator {
     }
     this.push("}\n\n");
     this.push(`sealed class ${className.name} {\n`);
-    this.push(`object UNKNOWN : ${className.name}() {\n`);
+    this.push("class Unknown private constructor(\n");
     this.push(
-      `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n`,
+      `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
     );
-    this.push("}\n\n");
+    this.push(`) : ${qualifiedName}() {\n`);
+    this.push(
+      `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n\n`,
+    );
+    this.push("companion object {\n");
+    this.push("private val UNKNOWN = Unknown(null);\n\n");
+    this.push("internal fun _create(\n");
+    this.push(`u: _UnrecognizedEnum<${qualifiedName}>?,\n`);
+    this.push(") = if (u != null) Unknown(u) else UNKNOWN;\n");
+    this.push("}\n"); // companion object
+    this.push("}\n\n"); // class Unknown
     for (const constField of constantFields) {
       this.push(`object ${constField.name.text} : ${className.name}() {\n`);
       const kindExpr = `${className.name}_Kind.CONST_${constField.name.text}`;
@@ -388,25 +406,30 @@ class KotlinSourceFileGenerator {
       this.push(`}\n\n`);
     }
     for (const valueField of valueFields) {
+      const valueType = valueField.type!;
       const wrapClassName =
         "wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
       const initializerType = typeSpeller
-        .getKotlinType(valueField.type!, "initializer")
+        .getKotlinType(valueType, "initializer")
         .toString();
       const frozenType = typeSpeller
-        .getKotlinType(valueField.type!, "initializer")
+        .getKotlinType(valueType, "frozen")
         .toString();
       this.pushEol();
       if (initializerType === frozenType) {
         this.push(`class ${wrapClassName}(\n`);
-        this.push(`val value: ${initializerType}\n`);
-        this.push(`) : ${className.name}() {\n`);
+        this.push(`val value: ${initializerType},\n`);
+        this.push(`) : ${qualifiedName}() {\n`);
       } else {
-        this.push(`class ${wrapClassName} private constructor (`);
-        this.push(`val value: ${initializerType}\n`);
-        this.push(`) : ${className.name}() {\n`);
-        this.push(`constructor(value: ${initializerType}): this(value) {\n`);
+        this.push(`class ${wrapClassName} private constructor (\n`);
+        this.push(`val value: ${frozenType},\n`);
+        this.push(`) : ${qualifiedName}() {\n`);
+        this.push("constructor(\n");
+        this.push(`value: ${initializerType},`);
+        this.push(
+          `): this(${this.toFrozenExpression("value", valueType)}) {}\n\n`,
+        );
       }
       const kindExpr = `${className.name}_Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
       this.push(`override val kind get() = ${kindExpr};\n`);
@@ -416,6 +439,7 @@ class KotlinSourceFileGenerator {
     this.push(`abstract val kind: ${className.name}_Kind;\n\n`);
 
     this.push("companion object {\n");
+    this.push("val UNKNOWN = Unknown._create(null);\n\n");
     for (const valueField of valueFields) {
       const type = valueField.type!;
       if (type.kind !== "record") {
@@ -450,7 +474,40 @@ class KotlinSourceFileGenerator {
       this.push(")\n");
       this.push(");\n\n");
     }
-    this.push("}\n\n");
+    this.push("private val serializerImpl =\n");
+    this.push(
+      `soia.internal.EnumSerializer.create<${className.name}, ${className.name}.Unknown>(\n`,
+    );
+    this.push("UNKNOWN,\n");
+    this.push(`{ ${className.name}.Unknown._create(it) },\n`);
+    this.push(") { it._unrecognized };\n\n");
+    this.push("val SERIALIZER = soia.Serializer(serializerImpl);\n\n");
+    this.push("init {\n");
+    for (const constField of constantFields) {
+      this.push("serializerImpl.addConstantField(\n");
+      this.push(`${constField.number},\n`);
+      this.push(`"${constField.name.text}",\n`);
+      this.push(`${constField.name.text},\n`);
+      this.push(");\n");
+    }
+    for (const valueField of valueFields) {
+      const serializerExpression = typeSpeller.getSerializerExpression(
+        valueField.type!,
+      );
+      const wrapClassName =
+        "wrap" +
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      this.push("serializerImpl.addValueField(\n");
+      this.push(`${valueField.number},\n`);
+      this.push(`"${valueField.name.text}",\n`);
+      this.push(`${wrapClassName}::class.java,\n`);
+      this.push(`${serializerExpression},\n`);
+      this.push(`{ ${wrapClassName}(it) },\n`);
+      this.push(") { it.value };\n");
+    }
+    this.push("serializerImpl.finalizeEnum();\n");
+    this.push("}\n"); // init
+    this.push("}\n\n"); // companion object
 
     // Write the classes for the records nested in `record`.
     const nestedRecords = record.record.nestedRecords.map(
@@ -463,11 +520,23 @@ class KotlinSourceFileGenerator {
   private writeMethod(method: Method): void {
     const { typeSpeller } = this;
     const methodName = method.name.text;
-    const requestType = typeSpeller.getKotlinType(method.requestType!, "frozen");
-    const requestSerializerExpr = typeSpeller.getSerializerExpression(method.requestType!);
-    const responseType = typeSpeller.getKotlinType(method.responseType!, "frozen");
-    const responseSerializerExpr = typeSpeller.getSerializerExpression(method.responseType!);
-    this.push(`val ${methodName}: soia.Method<\n${requestType},\n${responseType},\n> = soia.Method(\n`);
+    const requestType = typeSpeller.getKotlinType(
+      method.requestType!,
+      "frozen",
+    );
+    const requestSerializerExpr = typeSpeller.getSerializerExpression(
+      method.requestType!,
+    );
+    const responseType = typeSpeller.getKotlinType(
+      method.responseType!,
+      "frozen",
+    );
+    const responseSerializerExpr = typeSpeller.getSerializerExpression(
+      method.responseType!,
+    );
+    this.push(
+      `val ${methodName}: soia.Method<\n${requestType},\n${responseType},\n> = soia.Method(\n`,
+    );
     this.push(`"${methodName}",\n`);
     this.push(`${method.number},\n`);
     this.push(requestSerializerExpr + ",\n");
@@ -479,12 +548,15 @@ class KotlinSourceFileGenerator {
     const { typeSpeller } = this;
     const name = constant.name.text;
     const type = typeSpeller.getKotlinType(constant.type!, "frozen");
-    const serializerExpression = typeSpeller.getSerializerExpression(constant.type!);
-    const jsonStringLiteral = JSON.stringify(JSON.stringify(constant.valueAsDenseJson))
-    this.push(`val ${name}: ${type} = (\n`);
-    this.push(serializerExpression)
-    this.push(`.fromJsonCode(${jsonStringLiteral})\n`);
-    this.push(");\n\n");
+    const serializerExpression = typeSpeller.getSerializerExpression(
+      constant.type!,
+    );
+    const jsonStringLiteral = JSON.stringify(
+      JSON.stringify(constant.valueAsDenseJson),
+    );
+    this.push(`val ${name}: ${type} =\n`);
+    this.push(serializerExpression);
+    this.push(`.fromJsonCode(${jsonStringLiteral});\n\n`);
   }
 
   private getDefaultExpression(type: ResolvedType): string {
@@ -506,7 +578,7 @@ class KotlinSourceFileGenerator {
           case "string":
             return '""';
           case "bytes":
-            return "kotlin.byteArrayOf()";
+            return "okio.ByteString.EMPTY";
         }
       }
       case "array": {

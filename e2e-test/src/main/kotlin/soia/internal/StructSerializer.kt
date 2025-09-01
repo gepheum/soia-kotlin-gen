@@ -16,7 +16,7 @@ class StructSerializer<Frozen, Mutable>(
     private val getUnrecognizedFields: (Frozen) -> UnrecognizedFields<Frozen>?,
     private val setUnrecognizedFields: (Mutable, UnrecognizedFields<Frozen>) -> Unit,
 ) : SerializerImpl<Frozen> {
-    data class Field<Frozen, Mutable, T>(
+    private data class Field<Frozen, Mutable, T>(
         val name: String,
         val number: Int,
         val serializer: Serializer<T>,
@@ -60,8 +60,15 @@ class StructSerializer<Frozen, Mutable>(
         }
     }
 
-    fun addField(field: Field<Frozen, Mutable, *>) {
+    fun <T> addField(
+        name: String,
+        number: Int,
+        serializer: Serializer<T>,
+        getter: (Frozen) -> T,
+        setter: (Mutable, T) -> Unit,
+    ) {
         checkNotFinalized()
+        val field = Field(name, number, serializer, getter, setter)
         fields.add(field)
         nameToField[field.name] = field
     }
