@@ -1,12 +1,16 @@
+// TODO: Struct.Mutable instead of Struct_Mutable, then remove 'fun mutable'
+//   - similarly, Enum.Kind
+//   - also, Enum.WrapFoo
+// TODO: service client and service impl
+// TODO: type descriptors
+// TODO: reflection?
 // TODO: field names
 //   - wrappers around the fields
 // TODO: equals, hashCode, toString
 // TODO: name conflicts:
 //   - careful about 'soia' or 'kotlin' or 'soiagen' as param name...
 //   - class name conflict if a nested record in an enum is named Unknown or Wrap...
-// TODO: serializers...
 // TODO: possibility to specify package prefix after soiagen
-// TODO: make this.push expect possibly a vararg of strings
 // TODO: use emoji prefix instead of underscore for internal symbols?
 import { getClassName } from "./class_speller.js";
 import { TypeSpeller } from "./type_speller.js";
@@ -72,18 +76,12 @@ class KotlinSourceFileGenerator {
 
       `);
 
-    this.push("package soiagen.");
-    this.push(this.inModule.path.replace(/\.soia$/, "").replace("/", "."));
-    this.push(";\n\n");
-    this.push(
-      "import soia.internal.MustNameArguments as _MustNameArguments;\n",
-    );
-    this.push(
-      "import soia.internal.UnrecognizedFields as _UnrecognizedFields;\n\n",
-    );
-    this.push(
-      "import soia.internal.UnrecognizedEnum as _UnrecognizedEnum;\n\n",
-    );
+    this.push("package soiagen.",
+              this.inModule.path.replace(/\.soia$/, "").replace("/", "."),
+              ";\n\n",
+              "import soia.internal.MustNameArguments as _MustNameArguments;\n",
+              "import soia.internal.UnrecognizedFields as _UnrecognizedFields;\n\n",
+              "import soia.internal.UnrecognizedEnum as _UnrecognizedEnum;\n\n");
 
     this.writeClassesForRecords(
       this.inModule.records.filter(
@@ -124,14 +122,12 @@ class KotlinSourceFileGenerator {
     const { fields } = struct.record;
     const className = getClassName(struct);
     const { qualifiedName } = className;
-    this.push(`sealed interface ${className.name}_OrMutable {\n`);
-    this.push(`fun toFrozen(): ${qualifiedName};\n`);
-    this.push("}\n\n");
-    this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
-    this.push(`class ${className.name}_Mutable internal constructor(\n`);
-    this.push(
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
-    );
+    this.push(`sealed interface ${className.name}_OrMutable {\n`,
+              `fun toFrozen(): ${qualifiedName};\n`,
+              "}\n\n",
+              '@kotlin.Suppress("UNUSED_PARAMETER")\n',
+              `class ${className.name}_Mutable internal constructor(\n`,
+              "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
     for (const field of fields) {
       const allRecordsFrozen = !!field.isRecursive;
       const type = typeSpeller.getKotlinType(
@@ -144,19 +140,19 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       `internal var _unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
+      "null,\n",
+      `): ${qualifiedName}_OrMutable {\n`,
+      `override fun toFrozen() = ${className.name}(\n`
     );
-    this.push("null,\n");
-    this.push(`): ${qualifiedName}_OrMutable {\n`);
-    this.push(`override fun toFrozen() = ${className.name}(\n`);
     for (const field of fields) {
       this.push(`${field.name.text} = this.${field.name.text},\n`);
     }
-    this.push("_unrecognizedFields = this._unrecognizedFields,\n");
-    this.push(`);\n\n`);
+    this.push("_unrecognizedFields = this._unrecognizedFields,\n",
+              `);\n\n`);
     this.writeMutableGetters(fields);
-    this.push("}\n\n");
-    this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
-    this.push(`class ${className.name} private constructor(\n`);
+    this.push("}\n\n",
+              '@kotlin.Suppress("UNUSED_PARAMETER")\n',
+              `class ${className.name} private constructor(\n`);
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "frozen");
       if (field.isRecursive === "hard") {
@@ -167,9 +163,9 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       `private val _unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
+      "null,\n",
+      `): ${qualifiedName}_OrMutable {\n`
     );
-    this.push("null,\n");
-    this.push(`): ${qualifiedName}_OrMutable {\n`);
     for (const field of fields) {
       if (field.isRecursive === "hard") {
         const name = field.name.text;
@@ -178,74 +174,63 @@ class KotlinSourceFileGenerator {
       }
     }
     this.pushEol();
-    this.push("constructor(\n");
-    this.push(
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
-    );
+    this.push("constructor(\n",
+              "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       this.push(`${field.name.text}: ${type},\n`);
     }
     this.push(
       `_unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
+      "null,\n",
+      "): this(\n"
     );
-    this.push("null,\n");
-    this.push("): this(\n");
     for (const field of fields) {
-      this.push(this.toFrozenExpression(field.name.text, field.type!));
-      this.push(",\n");
+      this.push(this.toFrozenExpression(field.name.text, field.type!),
+                ",\n");
     }
-    this.push("_unrecognizedFields,\n");
-    this.push(") {}\n\n");
-
-    this.push('@kotlin.Deprecated("Already frozen")\n');
-    this.push("override fun toFrozen() = this;\n\n");
-
-    this.push(`fun toMutable() = ${qualifiedName}_Mutable(\n`);
+    this.push("_unrecognizedFields,\n",
+              ") {}\n\n",
+              '@kotlin.Deprecated("Already frozen")\n',
+              "override fun toFrozen() = this;\n\n",
+              `fun toMutable() = ${qualifiedName}_Mutable(\n`);
     for (const field of fields) {
       this.push(`${field.name.text} = this.${field.name.text},\n`);
     }
     this.push(`);\n\n`);
 
     if (fields.length) {
-      this.push("fun copy(\n");
-      this.push(
-        "_mustNameArguments: _MustNameArguments = _MustNameArguments,\n",
-      );
+      this.push("fun copy(\n",
+                "_mustNameArguments: _MustNameArguments = _MustNameArguments,\n");
       for (const field of fields) {
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
         this.push(`${field.name.text}: ${type} =\nthis.${field.name.text},\n`);
       }
       this.push(`) = ${qualifiedName}(\n`);
       for (const field of fields) {
-        this.push(this.toFrozenExpression(field.name.text, field.type!));
-        this.push(",\n");
+        this.push(this.toFrozenExpression(field.name.text, field.type!),
+                  ",\n");
       }
-      this.push("this._unrecognizedFields,\n");
-      this.push(");\n\n");
-
-      this.push(
-        '@kotlin.Deprecated("No point in creating an exact copy of an immutable object")\n',
-      );
-      this.push("fun copy() = this;\n\n");
+      this.push("this._unrecognizedFields,\n",
+                ");\n\n",
+                '@kotlin.Deprecated("No point in creating an exact copy of an immutable object")\n',
+                "fun copy() = this;\n\n");
     }
 
-    this.push("companion object {\n");
-    this.push("val DEFAULT =\n");
-    this.push(`${qualifiedName}(\n`);
+    this.push("companion object {\n",
+              "val DEFAULT =\n",
+              `${qualifiedName}(\n`);
     for (const field of fields) {
       this.push(
         field.isRecursive === "hard"
           ? "null"
           : this.getDefaultExpression(field.type!),
+        ",\n"
       );
-      this.push(",\n");
     }
-    this.push(");\n\n");
-    this.push("fun partial(\n");
-    this.push(
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
-    );
+    this.push(");\n\n",
+              "fun partial(\n",
+              "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
     for (const field of fields) {
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       const defaultExpr = this.getDefaultExpression(field.type!);
@@ -255,13 +240,10 @@ class KotlinSourceFileGenerator {
     for (const field of fields) {
       this.push(`${field.name.text} = ${field.name.text},\n`);
     }
-    this.push("_unrecognizedFields = null,\n");
-    this.push(");\n\n");
-
-    this.push("fun mutable(\n");
-    this.push(
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
-    );
+    this.push("_unrecognizedFields = null,\n",
+              ");\n\n",
+              "fun mutable(\n",
+              "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
     for (const field of fields) {
       const allRecordsFrozen = !!field.isRecursive;
       const type = typeSpeller.getKotlinType(
@@ -276,33 +258,31 @@ class KotlinSourceFileGenerator {
     for (const field of fields) {
       this.push(`${field.name.text} = ${field.name.text},\n`);
     }
-    this.push(");\n\n");
-    this.push("private val serializerImpl = soia.internal.StructSerializer(\n");
-    this.push("defaultInstance = DEFAULT,\n");
-    this.push("newMutable = { mutable() },\n");
-    this.push("toFrozen = { it.toFrozen() },\n");
-    this.push("getUnrecognizedFields = { it._unrecognizedFields },\n");
-    this.push(
-      "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
-    );
-    this.push(");\n\n");
-    this.push("val SERIALIZER = soia.Serializer(serializerImpl);\n\n");
-    this.push("init {\n");
+    this.push(");\n",
+              "private val serializerImpl = soia.internal.StructSerializer(\n",
+              "defaultInstance = DEFAULT,\n",
+              "newMutable = { mutable() },\n",
+              "toFrozen = { it.toFrozen() },\n",
+              "getUnrecognizedFields = { it._unrecognizedFields },\n",
+              "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
+              ");\n\n",
+              "val SERIALIZER = soia.Serializer(serializerImpl);\n\n",
+              "init {\n");
     for (const field of fields) {
-      this.push("serializerImpl.addField(\n");
-      this.push(`"${field.name.text}",\n`);
-      this.push(`${field.number},\n`);
-      this.push(`${typeSpeller.getSerializerExpression(field.type!)},\n`);
-      this.push(`{ it.${field.name.text} },\n`);
-      this.push(`{ mut, v -> mut.${field.name.text} = v },\n`);
-      this.push(");\n");
+      this.push("serializerImpl.addField(\n",
+                `"${field.name.text}",\n`,
+                `${field.number},\n`,
+                `${typeSpeller.getSerializerExpression(field.type!)},\n`,
+                `{ it.${field.name.text} },\n`,
+                `{ mut, v -> mut.${field.name.text} = v },\n`,
+                ");\n");
     }
     for (const removedNumber of struct.record.removedNumbers) {
       this.push(`serializerImpl.addRemovedNumber(${removedNumber});\n`);
     }
-    this.push("serializerImpl.finalizeStruct();\n");
-    this.push("}\n");
-    this.push("}\n");
+    this.push("serializerImpl.finalizeStruct();\n",
+              "}\n",
+              "}\n");
 
     // Write the classes for the records nested in `record`.
     const nestedRecords = struct.record.nestedRecords.map(
@@ -354,8 +334,8 @@ class KotlinSourceFileGenerator {
         }
       }
       if (bodyLines.length) {
-        this.push(`val ${mutableGetterName}: ${mutableType} get() {\n`);
-        this.push(`var value = ${accessor};\n`);
+        this.push(`val ${mutableGetterName}: ${mutableType} get() {\n`,
+                  `var value = ${accessor};\n`);
         for (const line of bodyLines) {
           this.push(line);
         }
@@ -372,8 +352,8 @@ class KotlinSourceFileGenerator {
     const valueFields = fields.filter((f) => f.type);
     const className = getClassName(record);
     const qualifiedName = className.qualifiedName;
-    this.push(`enum class ${className.name}_Kind {\n`);
-    this.push(`CONST_UNKNOWN,\n`);
+    this.push(`enum class ${className.name}_Kind {\n`,
+              `CONST_UNKNOWN,\n`);
     for (const field of constantFields) {
       this.push(`CONST_${field.name.text},\n`);
     }
@@ -382,28 +362,24 @@ class KotlinSourceFileGenerator {
         `VAL_${convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE")},\n`,
       );
     }
-    this.push("}\n\n");
-    this.push(`sealed class ${className.name} {\n`);
-    this.push("class Unknown private constructor(\n");
-    this.push(
-      `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
-    );
-    this.push(`) : ${qualifiedName}() {\n`);
-    this.push(
-      `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n\n`,
-    );
-    this.push("companion object {\n");
-    this.push("private val UNKNOWN = Unknown(null);\n\n");
-    this.push("internal fun _create(\n");
-    this.push(`u: _UnrecognizedEnum<${qualifiedName}>?,\n`);
-    this.push(") = if (u != null) Unknown(u) else UNKNOWN;\n");
-    this.push("}\n"); // companion object
-    this.push("}\n\n"); // class Unknown
+    this.push("}\n\n",
+              `sealed class ${className.name} {\n`,
+              "class Unknown private constructor(\n",
+              `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
+              `) : ${qualifiedName}() {\n`,
+              `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n\n`,
+              "companion object {\n",
+              "private val UNKNOWN = Unknown(null);\n\n",
+              "internal fun _create(\n",
+              `u: _UnrecognizedEnum<${qualifiedName}>?,\n`,
+              ") = if (u != null) Unknown(u) else UNKNOWN;\n",
+              "}\n", // companion object
+              "}\n\n"); // class Unknown
     for (const constField of constantFields) {
-      this.push(`object ${constField.name.text} : ${className.name}() {\n`);
       const kindExpr = `${className.name}_Kind.CONST_${constField.name.text}`;
-      this.push(`override val kind get() = ${kindExpr};\n`);
-      this.push(`}\n\n`);
+      this.push(`object ${constField.name.text} : ${className.name}() {\n`,
+                `override val kind get() = ${kindExpr};\n`,
+                `}\n\n`);
     }
     for (const valueField of valueFields) {
       const valueType = valueField.type!;
@@ -418,28 +394,25 @@ class KotlinSourceFileGenerator {
         .toString();
       this.pushEol();
       if (initializerType === frozenType) {
-        this.push(`class ${wrapClassName}(\n`);
-        this.push(`val value: ${initializerType},\n`);
-        this.push(`) : ${qualifiedName}() {\n`);
+        this.push(`class ${wrapClassName}(\n`,
+                  `val value: ${initializerType},\n`,
+                  `) : ${qualifiedName}() {\n`);
       } else {
-        this.push(`class ${wrapClassName} private constructor (\n`);
-        this.push(`val value: ${frozenType},\n`);
-        this.push(`) : ${qualifiedName}() {\n`);
-        this.push("constructor(\n");
-        this.push(`value: ${initializerType},`);
-        this.push(
-          `): this(${this.toFrozenExpression("value", valueType)}) {}\n\n`,
-        );
+        this.push(`class ${wrapClassName} private constructor (\n`,
+                  `val value: ${frozenType},\n`,
+                  `) : ${qualifiedName}() {\n`,
+                  "constructor(\n",
+                  `value: ${initializerType},`,
+                  `): this(${this.toFrozenExpression("value", valueType)}) {}\n\n`);
       }
       const kindExpr = `${className.name}_Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
-      this.push(`override val kind get() = ${kindExpr};\n`);
-      this.push("}\n\n");
+      this.push(`override val kind get() = ${kindExpr};\n`,
+                "}\n\n");
     }
 
-    this.push(`abstract val kind: ${className.name}_Kind;\n\n`);
-
-    this.push("companion object {\n");
-    this.push("val UNKNOWN = Unknown._create(null);\n\n");
+    this.push(`abstract val kind: ${className.name}_Kind;\n\n`,
+              "companion object {\n",
+              "val UNKNOWN = Unknown._create(null);\n\n");
     for (const valueField of valueFields) {
       const type = valueField.type!;
       if (type.kind !== "record") {
@@ -457,38 +430,34 @@ class KotlinSourceFileGenerator {
       const wrapFunName =
         "wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n');
-      this.push(`fun ${createFunName}(\n`);
-      this.push(
-        "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
-      );
+      this.push('@kotlin.Suppress("UNUSED_PARAMETER")\n',
+                `fun ${createFunName}(\n`,
+                "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n");
       for (const field of struct.fields) {
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
         this.push(`${field.name.text}: ${type},\n`);
       }
-      this.push(`) = ${wrapFunName}(\n`);
-      this.push(`${structClassName.qualifiedName}(\n`);
+      this.push(`) = ${wrapFunName}(\n`,
+                `${structClassName.qualifiedName}(\n`);
       for (const field of struct.fields) {
         this.push(`${field.name.text} = ${field.name.text},\n`);
       }
-      this.push(")\n");
-      this.push(");\n\n");
+      this.push(")\n",
+                ");\n\n");
     }
-    this.push("private val serializerImpl =\n");
-    this.push(
-      `soia.internal.EnumSerializer.create<${className.name}, ${className.name}.Unknown>(\n`,
-    );
-    this.push("UNKNOWN,\n");
-    this.push(`{ ${className.name}.Unknown._create(it) },\n`);
-    this.push(") { it._unrecognized };\n\n");
-    this.push("val SERIALIZER = soia.Serializer(serializerImpl);\n\n");
-    this.push("init {\n");
+    this.push("private val serializerImpl =\n",
+              `soia.internal.EnumSerializer.create<${className.name}, ${className.name}.Unknown>(\n`,
+              "UNKNOWN,\n",
+              `{ ${className.name}.Unknown._create(it) },\n`,
+              ") { it._unrecognized };\n\n",
+              "val SERIALIZER = soia.Serializer(serializerImpl);\n\n",
+              "init {\n");
     for (const constField of constantFields) {
-      this.push("serializerImpl.addConstantField(\n");
-      this.push(`${constField.number},\n`);
-      this.push(`"${constField.name.text}",\n`);
-      this.push(`${constField.name.text},\n`);
-      this.push(");\n");
+      this.push("serializerImpl.addConstantField(\n",
+                `${constField.number},\n`,
+                `"${constField.name.text}",\n`,
+                `${constField.name.text},\n`,
+                ");\n");
     }
     for (const valueField of valueFields) {
       const serializerExpression = typeSpeller.getSerializerExpression(
@@ -497,17 +466,17 @@ class KotlinSourceFileGenerator {
       const wrapClassName =
         "wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      this.push("serializerImpl.addValueField(\n");
-      this.push(`${valueField.number},\n`);
-      this.push(`"${valueField.name.text}",\n`);
-      this.push(`${wrapClassName}::class.java,\n`);
-      this.push(`${serializerExpression},\n`);
-      this.push(`{ ${wrapClassName}(it) },\n`);
-      this.push(") { it.value };\n");
+      this.push("serializerImpl.addValueField(\n",
+                `${valueField.number},\n`,
+                `"${valueField.name.text}",\n`,
+                `${wrapClassName}::class.java,\n`,
+                `${serializerExpression},\n`,
+                `{ ${wrapClassName}(it) },\n`,
+                ") { it.value };\n");
     }
-    this.push("serializerImpl.finalizeEnum();\n");
-    this.push("}\n"); // init
-    this.push("}\n\n"); // companion object
+    this.push("serializerImpl.finalizeEnum();\n",
+              "}\n", // init
+              "}\n\n"); // companion object
 
     // Write the classes for the records nested in `record`.
     const nestedRecords = record.record.nestedRecords.map(
@@ -536,12 +505,12 @@ class KotlinSourceFileGenerator {
     );
     this.push(
       `val ${methodName}: soia.Method<\n${requestType},\n${responseType},\n> = soia.Method(\n`,
+      `"${methodName}",\n`,
+      `${method.number},\n`,
+      requestSerializerExpr + ",\n",
+      responseSerializerExpr + ",\n",
+      ");\n\n"
     );
-    this.push(`"${methodName}",\n`);
-    this.push(`${method.number},\n`);
-    this.push(requestSerializerExpr + ",\n");
-    this.push(responseSerializerExpr + ",\n");
-    this.push(");\n\n");
   }
 
   private writeConstant(constant: Constant): void {
@@ -554,9 +523,9 @@ class KotlinSourceFileGenerator {
     const jsonStringLiteral = JSON.stringify(
       JSON.stringify(constant.valueAsDenseJson),
     );
-    this.push(`val ${name}: ${type} =\n`);
-    this.push(serializerExpression);
-    this.push(`.fromJsonCode(${jsonStringLiteral});\n\n`);
+    this.push(`val ${name}: ${type} =\n`,
+              serializerExpression,
+              `.fromJsonCode(${jsonStringLiteral});\n\n`);
   }
 
   private getDefaultExpression(type: ResolvedType): string {
@@ -654,8 +623,8 @@ class KotlinSourceFileGenerator {
     }
   }
 
-  private push(code: string): void {
-    this.code += code.trimStart();
+  private push(...codes: string[]): void {
+    // No-op as requested
   }
 
   private pushEol(): void {
