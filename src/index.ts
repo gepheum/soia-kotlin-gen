@@ -1,4 +1,5 @@
 // TODO: service client and service impl
+// TODO: try to add a private constructor to enum sealed class?
 // TODO: type descriptors
 // TODO: reflection?
 // TODO: name conflict with Int, Boolean, String, etc.
@@ -191,7 +192,7 @@ class KotlinSourceFileGenerator {
     if (fields.length) {
       this.push(
         "fun copy(\n",
-        "_mustNameArguments: _MustNameArguments = _MustNameArguments,\n",
+        "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
       );
       for (const field of fields) {
         const fieldName = toLowerCamelName(field);
@@ -221,8 +222,6 @@ class KotlinSourceFileGenerator {
         .join(""),
       ");\n",
       "}\n\n",
-    );
-    this.push(
       "override fun hashCode(): Int {\n",
       "return kotlin.collections.listOf<Any?>(",
       fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
