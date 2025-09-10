@@ -1,15 +1,17 @@
 // TODO: Struct.Mutable instead of Struct_Mutable, then remove 'fun mutable'
 //   - similarly, Enum.Kind
 //   - also, Enum.WrapFoo
+//     - worry about name conflict then
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
 // TODO: equals, hashCode, toString
 // TODO: name conflicts:
 //   - careful about 'soia' or 'kotlin', 'kotlinx', or 'soiagen' as param name...
-//   - class name conflict if a nested record in an enum is named Unknown or Wrap...
-// TODO: possibility to specify package prefix after soiagen
-// Make classes kotlinx serializable...
+// TODO: possibility to specify package prefix after soiagen in the config
+// Make classes kotlinx serializable?
+// TODO: add linter
+// TODO: do a pass at the .ts code to see if it can be simplified
 import { getClassName } from "./class_speller.js";
 import { toEnumConstantName, toLowerCamelName } from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
@@ -127,35 +129,8 @@ class KotlinSourceFileGenerator {
       `sealed interface ${className.name}_OrMutable {\n`,
       `fun toFrozen(): ${qualifiedName};\n`,
       "}\n\n",
-      '@kotlin.Suppress("UNUSED_PARAMETER")\n',
-      `class ${className.name}_Mutable internal constructor(\n`,
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
-    for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
-      const allRecordsFrozen = !!field.isRecursive;
-      const type = typeSpeller.getKotlinType(
-        field.type!,
-        "maybe-mutable",
-        allRecordsFrozen,
-      );
-      const defaultExpr = this.getDefaultExpression(field.type!);
-      this.push(`var ${fieldName}: ${type} =\n${defaultExpr},\n`);
-    }
     this.push(
-      `internal var _unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
-      "null,\n",
-      `): ${qualifiedName}_OrMutable {\n`,
-      `override fun toFrozen() = ${className.name}(\n`,
-    );
-    for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
-      this.push(`${fieldName} = this.${fieldName},\n`);
-    }
-    this.push("_unrecognizedFields = this._unrecognizedFields,\n", `);\n\n`);
-    this.writeMutableGetters(fields);
-    this.push(
-      "}\n\n",
       '@kotlin.Suppress("UNUSED_PARAMETER")\n',
       `class ${className.name} private constructor(\n`,
     );
@@ -206,7 +181,7 @@ class KotlinSourceFileGenerator {
       ") {}\n\n",
       '@kotlin.Deprecated("Already frozen")\n',
       "override fun toFrozen() = this;\n\n",
-      `fun toMutable() = ${qualifiedName}_Mutable(\n`,
+      `fun toMutable() = Mutable(\n`,
     );
     for (const field of fields) {
       const fieldName = toLowerCamelName(field);
@@ -236,6 +211,36 @@ class KotlinSourceFileGenerator {
         "fun copy() = this;\n\n",
       );
     }
+    this.push(
+      `class Mutable internal constructor(\n`,
+      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
+    );
+    for (const field of fields) {
+      const fieldName = toLowerCamelName(field);
+      const allRecordsFrozen = !!field.isRecursive;
+      const type = typeSpeller.getKotlinType(
+        field.type!,
+        "maybe-mutable",
+        allRecordsFrozen,
+      );
+      const defaultExpr = this.getDefaultExpression(field.type!);
+      this.push(`var ${fieldName}: ${type} =\n${defaultExpr},\n`);
+    }
+    this.push(
+      `internal var _unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
+      "null,\n",
+      `): ${qualifiedName}_OrMutable {\n`,
+      `override fun toFrozen() = ${qualifiedName}(\n`,
+    );
+    for (const field of fields) {
+      const fieldName = toLowerCamelName(field);
+      this.push(`${fieldName} = this.${fieldName},\n`);
+    }
+    this.push("_unrecognizedFields = this._unrecognizedFields,\n", `);\n\n`);
+    this.writeMutableGetters(fields);
+    this.push(
+      "}\n\n",
+    );
 
     this.push("companion object {\n", "val DEFAULT =\n", `${qualifiedName}(\n`);
     for (const field of fields) {
@@ -265,30 +270,11 @@ class KotlinSourceFileGenerator {
     this.push(
       "_unrecognizedFields = null,\n",
       ");\n\n",
-      "fun mutable(\n",
-      "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
-    for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
-      const allRecordsFrozen = !!field.isRecursive;
-      const type = typeSpeller.getKotlinType(
-        field.type!,
-        "maybe-mutable",
-        allRecordsFrozen,
-      );
-      const defaultExpr = this.getDefaultExpression(field.type!);
-      this.push(`${fieldName}: ${type} =\n${defaultExpr},\n`);
-    }
-    this.push(`) = ${qualifiedName}_Mutable(\n`);
-    for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
-      this.push(`${fieldName} = ${fieldName},\n`);
-    }
     this.push(
-      ");\n\n",
       "private val serializerImpl = land.soia.internal.StructSerializer(\n",
       "defaultInstance = DEFAULT,\n",
-      "newMutable = { mutable() },\n",
+      "newMutable = { Mutable() },\n",
       "toFrozen = { it.toFrozen() },\n",
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
@@ -358,7 +344,7 @@ class KotlinSourceFileGenerator {
             `${accessor} = value;\n`,
             "return value;\n",
             "}\n",
-            `is ${structQualifiedName}_Mutable -> value;\n`,
+            `is ${structQualifiedName}.Mutable -> value;\n`,
             "}\n",
           ];
         }

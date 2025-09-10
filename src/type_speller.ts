@@ -59,7 +59,7 @@ export class TypeSpeller {
           } else if (flavor === "maybe-mutable" || flavor === "initializer") {
             return allRecordsFrozen ? className : `${className}_OrMutable`;
           } else if (flavor === "mutable") {
-            return `${className}_Mutable`;
+            return `${className}.Mutable`;
           } else {
             const _: "kind" = flavor;
             throw TypeError();
