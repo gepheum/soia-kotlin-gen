@@ -131,4 +131,8 @@ struct True {
   to_frozen: bool?;
   to_mutable: bool?;
   and: bool?;
+  get: bool;
+  field: bool;
+  by: bool;
+  it: [Floats|x];
 }

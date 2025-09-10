@@ -1,4 +1,3 @@
-import type { Module } from "soiac";
 import { RecordLocation } from "soiac";
 
 export interface ClassName {
@@ -17,7 +16,14 @@ export function getClassName(record: RecordLocation): ClassName {
   const parts: string[] = [];
   for (let i = 0; i < recordAncestors.length; ++i) {
     const record = recordAncestors[i]!;
-    const name = record.name.text;
+    let name = record.name.text;
+    const parentType = i > 0 ? recordAncestors[i - 1]!.recordType : undefined;
+    if (
+      (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
+      (parentType === "enum" && ENUM_NESTED_TYPE_NAMES.has(name))
+    ) {
+      name += "_";
+    }
     parts.push(name);
   }
 
@@ -29,3 +35,12 @@ export function getClassName(record: RecordLocation): ClassName {
 
   return { name, qualifiedName };
 }
+
+/** Generated types nested within a struct class. */
+const STRUCT_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set(["Mutable"]);
+
+/** Generated types nested within an enum class. */
+const ENUM_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set([
+  "Kind",
+  "Unknown",
+]);

@@ -1,5 +1,6 @@
 import { ClassName, getClassName } from "./class_speller.js";
-import type { Module, RecordKey, RecordLocation, ResolvedType } from "soiac";
+import { toLowerCamelName } from "./naming.js";
+import type { RecordKey, RecordLocation, ResolvedType } from "soiac";
 
 export type TypeFlavor =
   | "initializer"
@@ -190,7 +191,9 @@ export class TypeSpeller {
       }
       case "array": {
         if (type.key) {
-          const path = type.key.path.map((f) => f.name.text).join(".");
+          const path = type.key.path
+            .map((f) => toLowerCamelName(f.name.text))
+            .join(".");
           return (
             "land.soia.internal.keyedListSerializer(\n" +
             this.getSerializerExpression(type.item) +
