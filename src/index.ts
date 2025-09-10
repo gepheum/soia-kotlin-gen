@@ -1,7 +1,8 @@
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
-// TODO: equals, hashCode, toString
+// TODO: name conflict with Int, Boolean, String, etc.
+// TODO: equals, hashCode, toString on both structs and enums
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
 // TODO: .ts code:
@@ -219,6 +220,13 @@ class KotlinSourceFileGenerator {
         )
         .join(""),
       ");\n",
+      "}\n\n",
+    );
+    this.push(
+      "override fun hashCode(): Int {\n",
+      "return kotlin.collections.listOf<Any?>(",
+      fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
+      ").hashCode();\n",
       "}\n\n",
     );
     this.push(
