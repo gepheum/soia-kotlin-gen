@@ -4,8 +4,9 @@
 // TODO: equals, hashCode, toString
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
-// TODO: add linter
-// TODO: do a pass at the .ts code to see if it can be simplified
+// TODO: .ts code:
+//   add linter
+//   do a pass at the .ts code to see if it can be simplified
 import {
   getClassName,
   toEnumConstantName,
@@ -556,9 +557,10 @@ class KotlinSourceFileGenerator {
       JSON.stringify(constant.valueAsDenseJson),
     );
     this.push(
-      `val ${name}: ${type} =\n`,
+      `val ${name}: ${type} by kotlin.lazy {\n`,
       serializerExpression,
-      `.fromJsonCode(${jsonStringLiteral});\n\n`,
+      `.fromJsonCode(${jsonStringLiteral})\n`,
+      "}\n\n",
     );
   }
 
