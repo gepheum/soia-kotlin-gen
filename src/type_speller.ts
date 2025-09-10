@@ -1,4 +1,4 @@
-import { ClassName, getClassName } from "./class_speller.js";
+import { ClassName, getClassName } from "./naming.js";
 import { toLowerCamelName } from "./naming.js";
 import type { RecordKey, RecordLocation, ResolvedType } from "soiac";
 

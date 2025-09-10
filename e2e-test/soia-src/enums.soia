@@ -43,4 +43,6 @@ enum Kind {
     kind: bool;
   }
   kind: Kind;
+  struct WrapKind {}
+  wrap_kind: WrapKind;
 }

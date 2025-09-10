@@ -1,17 +1,16 @@
-// TODO: Enum.WrapFoo instead of wrapFoo
-//   - worry about name conflict then
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
 // TODO: equals, hashCode, toString
-// TODO: name conflicts:
-//   - careful about 'soia' or 'kotlin', 'kotlinx', or 'soiagen' as param name...
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
 // TODO: add linter
 // TODO: do a pass at the .ts code to see if it can be simplified
-import { getClassName } from "./class_speller.js";
-import { toEnumConstantName, toLowerCamelName } from "./naming.js";
+import {
+  getClassName,
+  toEnumConstantName,
+  toLowerCamelName,
+} from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
   type CodeGenerator,
@@ -399,7 +398,7 @@ class KotlinSourceFileGenerator {
     for (const valueField of valueFields) {
       const valueType = valueField.type!;
       const wrapClassName =
-        "wrap" +
+        "Wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
@@ -447,8 +446,8 @@ class KotlinSourceFileGenerator {
       const createFunName =
         "create" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      const wrapFunName =
-        "wrap" +
+      const wrapClassName =
+        "Wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
@@ -460,7 +459,10 @@ class KotlinSourceFileGenerator {
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
         this.push(`${fieldName}: ${type},\n`);
       }
-      this.push(`) = ${wrapFunName}(\n`, `${structClassName.qualifiedName}(\n`);
+      this.push(
+        `) = ${wrapClassName}(\n`,
+        `${structClassName.qualifiedName}(\n`,
+      );
       for (const field of struct.fields) {
         const fieldName = toLowerCamelName(field);
         this.push(`${fieldName} = ${fieldName},\n`);
@@ -490,7 +492,7 @@ class KotlinSourceFileGenerator {
         valueField.type!,
       );
       const wrapClassName =
-        "wrap" +
+        "Wrap" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
       this.push(
         "serializerImpl.addValueField(\n",
