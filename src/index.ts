@@ -210,6 +210,18 @@ class KotlinSourceFileGenerator {
       );
     }
     this.push(
+      "override fun equals(other: Any?): Boolean {\n",
+      `return this === other || (other is ${qualifiedName}`,
+      fields
+        .map(
+          (f) =>
+            ` && this.${toLowerCamelName(f)} == other.${toLowerCamelName(f)}`,
+        )
+        .join(""),
+      ");\n",
+      "}\n\n",
+    );
+    this.push(
       `class Mutable internal constructor(\n`,
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
