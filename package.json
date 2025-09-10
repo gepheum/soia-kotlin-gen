@@ -22,10 +22,11 @@
   ],
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write \"**/*.ts\"",
-    "format:check": "prettier --check \"**/*.ts\"",
-    "test:local": "npm run build && soiac -r ./e2e-test && cd e2e-test && cd ..",
-    "test:cleanup": "rm -rf e2e-test/test-env"
+    "format-soia": "cd e2e-test && soiac --fmt fix && cd ..",
+    "format-soia:check": "cd e2e-test && soiac --fmt check && cd ..",
+    "format": "prettier --write \"**/*.ts\" && npm run format-soia",
+    "format:check": "prettier --check \"**/*.ts\" && npm run format-soia:check",
+    "test": "npm run build && cd e2e-test && soiac -r . && ./gradlew test && cd .."
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

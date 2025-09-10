@@ -26,6 +26,3 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm run test
-      - uses: jakebailey/pyright-action@v2
-        with:
-          pylance-version: latest-release

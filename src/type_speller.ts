@@ -100,7 +100,7 @@ export class TypeSpeller {
             if (keyType.kind === "record") {
               kotlinKeyType += "_Kind";
             }
-            return `soia.KeyedList<${itemType}, ${kotlinKeyType}>`;
+            return `land.soia.KeyedList<${itemType}, ${kotlinKeyType}>`;
           } else {
             return `kotlin.collections.List<${itemType}>`;
           }
@@ -167,23 +167,23 @@ export class TypeSpeller {
       case "primitive": {
         switch (type.primitive) {
           case "bool":
-            return "soia.Serializers.bool";
+            return "land.soia.Serializers.bool";
           case "int32":
-            return "soia.Serializers.int32";
+            return "land.soia.Serializers.int32";
           case "int64":
-            return "soia.Serializers.int64";
+            return "land.soia.Serializers.int64";
           case "uint64":
-            return "soia.Serializers.uint64";
+            return "land.soia.Serializers.uint64";
           case "float32":
-            return "soia.Serializers.float32";
+            return "land.soia.Serializers.float32";
           case "float64":
-            return "soia.Serializers.float64";
+            return "land.soia.Serializers.float64";
           case "timestamp":
-            return "soia.Serializers.instant";
+            return "land.soia.Serializers.instant";
           case "string":
-            return "soia.Serializers.string";
+            return "land.soia.Serializers.string";
           case "bytes":
-            return "soia.Serializers.bytes";
+            return "land.soia.Serializers.bytes";
         }
         const _: never = type.primitive;
         throw TypeError();
@@ -192,13 +192,13 @@ export class TypeSpeller {
         if (type.key) {
           const path = type.key.path.map((f) => f.name.text).join(".");
           return (
-            "soia.internal.keyedListSerializer(\n" +
+            "land.soia.internal.keyedListSerializer(\n" +
             this.getSerializerExpression(type.item) +
             `,\n"${path}",\n{ it.${path} },\n)`
           );
         } else {
           return (
-            "soia.Serializers.list(\n" +
+            "land.soia.Serializers.list(\n" +
             this.getSerializerExpression(type.item) +
             ",\n)"
           );
@@ -206,7 +206,7 @@ export class TypeSpeller {
       }
       case "optional": {
         return (
-          `soia.Serializers.optional(\n` +
+          `land.soia.Serializers.optional(\n` +
           this.getSerializerExpression(type.other) +
           `,\n)`
         );

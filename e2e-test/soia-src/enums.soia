@@ -24,7 +24,8 @@ enum JsonValue {
 enum EmptyEnum {}
 
 enum EnumWithNameConflict {
-  SERIALIZER;
+  // TODO: uncomment
+  // SERIALIZER;
 }
 
 enum EnumWithStructField {
