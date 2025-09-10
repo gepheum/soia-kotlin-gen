@@ -1,7 +1,5 @@
-// TODO: Struct.Mutable instead of Struct_Mutable, then remove 'fun mutable'
-//   - similarly, Enum.Kind
-//   - also, Enum.WrapFoo
-//     - worry about name conflict then
+// TODO: Enum.WrapFoo instead of wrapFoo
+//   - worry about name conflict then
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
@@ -114,7 +112,7 @@ class KotlinSourceFileGenerator {
       if (recordType === "struct") {
         this.writeClassesForStruct(record);
       } else {
-        this.writeClassesForEnum(record);
+        this.writeClassForEnum(record);
       }
     }
   }
@@ -238,9 +236,7 @@ class KotlinSourceFileGenerator {
     }
     this.push("_unrecognizedFields = this._unrecognizedFields,\n", `);\n\n`);
     this.writeMutableGetters(fields);
-    this.push(
-      "}\n\n",
-    );
+    this.push("}\n\n");
 
     this.push("companion object {\n", "val DEFAULT =\n", `${qualifiedName}(\n`);
     for (const field of fields) {
@@ -267,10 +263,7 @@ class KotlinSourceFileGenerator {
       const fieldName = toLowerCamelName(field);
       this.push(`${fieldName} = ${fieldName},\n`);
     }
-    this.push(
-      "_unrecognizedFields = null,\n",
-      ");\n\n",
-    );
+    this.push("_unrecognizedFields = null,\n", ");\n\n");
     this.push(
       "private val serializerImpl = land.soia.internal.StructSerializer(\n",
       "defaultInstance = DEFAULT,\n",
@@ -362,7 +355,7 @@ class KotlinSourceFileGenerator {
     }
   }
 
-  private writeClassesForEnum(record: RecordLocation): void {
+  private writeClassForEnum(record: RecordLocation): void {
     const { typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = record.record;
@@ -370,7 +363,8 @@ class KotlinSourceFileGenerator {
     const valueFields = fields.filter((f) => f.type);
     const className = getClassName(record);
     const qualifiedName = className.qualifiedName;
-    this.push(`enum class ${className.name}_Kind {\n`, `CONST_UNKNOWN,\n`);
+    this.push(`sealed class ${className.name} {\n`);
+    this.push(`enum class Kind {\n`, `CONST_UNKNOWN,\n`);
     for (const field of constantFields) {
       this.push(`CONST_${field.name.text},\n`);
     }
@@ -379,13 +373,12 @@ class KotlinSourceFileGenerator {
         `VAL_${convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE")},\n`,
       );
     }
+    this.push("}\n\n");
     this.push(
-      "}\n\n",
-      `sealed class ${className.name} {\n`,
       "class Unknown private constructor(\n",
       `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
-      `override val kind get() = ${className.name}_Kind.CONST_UNKNOWN;\n\n`,
+      "override val kind get() = Kind.CONST_UNKNOWN;\n\n",
       "companion object {\n",
       "private val UNKNOWN = Unknown(null);\n\n",
       "internal fun _create(\n",
@@ -395,10 +388,10 @@ class KotlinSourceFileGenerator {
       "}\n\n",
     ); // class Unknown
     for (const constField of constantFields) {
-      const kindExpr = `${className.name}_Kind.CONST_${constField.name.text}`;
+      const kindExpr = `Kind.CONST_${constField.name.text}`;
       const constantName = toEnumConstantName(constField);
       this.push(
-        `object ${constantName} : ${className.name}() {\n`,
+        `object ${constantName} : ${qualifiedName}() {\n`,
         `override val kind get() = ${kindExpr};\n`,
         `}\n\n`,
       );
@@ -431,12 +424,12 @@ class KotlinSourceFileGenerator {
           `): this(${this.toFrozenExpression("value", valueType)}) {}\n\n`,
         );
       }
-      const kindExpr = `${className.name}_Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
+      const kindExpr = `Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
       this.push(`override val kind get() = ${kindExpr};\n`, "}\n\n");
     }
 
     this.push(
-      `abstract val kind: ${className.name}_Kind;\n\n`,
+      "abstract val kind: Kind;\n\n",
       "companion object {\n",
       "val UNKNOWN = Unknown._create(null);\n\n",
     );
@@ -476,9 +469,9 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       "private val serializerImpl =\n",
-      `land.soia.internal.EnumSerializer.create<${className.name}, ${className.name}.Unknown>(\n`,
+      `land.soia.internal.EnumSerializer.create<${qualifiedName}, ${qualifiedName}.Unknown>(\n`,
       "UNKNOWN,\n",
-      `{ ${className.name}.Unknown._create(it) },\n`,
+      `{ ${qualifiedName}.Unknown._create(it) },\n`,
       ") { it._unrecognized };\n\n",
       "val SERIALIZER = land.soia.internal.makeSerializer(serializerImpl);\n\n",
       "init {\n",
@@ -595,7 +588,7 @@ class KotlinSourceFileGenerator {
           const { keyType } = type.key;
           let kotlinKeyType = this.typeSpeller.getKotlinType(keyType, "frozen");
           if (keyType.kind === "record") {
-            kotlinKeyType += "_Kind";
+            kotlinKeyType += ".Kind";
           }
           return `land.soia.internal.emptyKeyedList<${itemType}, ${kotlinKeyType}>()`;
         } else {

@@ -94,7 +94,10 @@ struct NameCollision {
   enum Enum {
     DEFAULT;
 
-    struct Mutable {}
+    struct Mutable {
+      struct Mutable {}
+      mutable: Mutable;
+    }
     mutable: Mutable;
   }
 }

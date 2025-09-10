@@ -75,7 +75,7 @@ export class TypeSpeller {
         ) {
           return className;
         } else if (flavor === "kind") {
-          return `${className}_Kind`;
+          return `${className}.Kind`;
         } else {
           const _: never = flavor;
           throw TypeError();
@@ -99,7 +99,7 @@ export class TypeSpeller {
             const { keyType } = type.key;
             let kotlinKeyType = this.getKotlinType(keyType, "frozen");
             if (keyType.kind === "record") {
-              kotlinKeyType += "_Kind";
+              kotlinKeyType += ".Kind";
             }
             return `land.soia.KeyedList<${itemType}, ${kotlinKeyType}>`;
           } else {

@@ -35,3 +35,12 @@ enum EnumWithStructField {
   }
   s: S = 1;
 }
+
+enum Kind {
+  FOO;
+  BAR;
+  enum Kind {
+    kind: bool;
+  }
+  kind: Kind;
+}
