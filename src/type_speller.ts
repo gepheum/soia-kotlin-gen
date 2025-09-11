@@ -136,21 +136,21 @@ export class TypeSpeller {
         const { primitive } = type;
         switch (primitive) {
           case "bool":
-            return "Boolean";
+            return "kotlin.Boolean";
           case "int32":
-            return "Int";
+            return "kotlin.Int";
           case "int64":
-            return "Long";
+            return "kotlin.Long";
           case "uint64":
-            return "ULong";
+            return "kotlin.ULong";
           case "float32":
-            return "Float";
+            return "kotlin.Float";
           case "float64":
-            return "Double";
+            return "kotlin.Double";
           case "timestamp":
             return "java.time.Instant";
           case "string":
-            return "String";
+            return "kotlin.String";
           case "bytes":
             return "okio.ByteString";
         }

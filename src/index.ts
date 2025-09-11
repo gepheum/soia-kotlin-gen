@@ -1,8 +1,8 @@
+// TODO: rename WrapFoo to FooOption?
 // TODO: service client and service impl
 // TODO: try to add a private constructor to enum sealed class?
 // TODO: type descriptors
 // TODO: reflection?
-// TODO: name conflict with Int, Boolean, String, etc.
 // TODO: equals, hashCode, toString on both structs and enums
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
@@ -212,7 +212,7 @@ class KotlinSourceFileGenerator {
       );
     }
     this.push(
-      "override fun equals(other: Any?): Boolean {\n",
+      "override fun equals(other: Any?): kotlin.Boolean {\n",
       `return this === other || (other is ${qualifiedName}`,
       fields
         .map(
@@ -222,7 +222,7 @@ class KotlinSourceFileGenerator {
         .join(""),
       ");\n",
       "}\n\n",
-      "override fun hashCode(): Int {\n",
+      "override fun hashCode(): kotlin.Int {\n",
       "return kotlin.collections.listOf<Any?>(",
       fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
       ").hashCode();\n",
