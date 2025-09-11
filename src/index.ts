@@ -1,6 +1,5 @@
 // TODO: rename WrapFoo to FooOption?
 // TODO: service client and service impl
-// TODO: try to add a private constructor to enum sealed class?
 // TODO: type descriptors
 // TODO: reflection?
 // TODO: toString on both structs and enums
@@ -383,7 +382,7 @@ class KotlinSourceFileGenerator {
     const valueFields = fields.filter((f) => f.type);
     const className = getClassName(record);
     const qualifiedName = className.qualifiedName;
-    this.push(`sealed class ${className.name} {\n`);
+    this.push(`sealed class ${className.name} private constructor() {\n`);
     this.push(`enum class Kind {\n`, `CONST_UNKNOWN,\n`);
     for (const field of constantFields) {
       this.push(`CONST_${field.name.text},\n`);
