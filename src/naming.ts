@@ -91,7 +91,7 @@ export function getClassName(record: RecordLocation): ClassName {
     if (
       (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
       (parentType === "enum" &&
-        (ENUM_NESTED_TYPE_NAMES.has(name) || /^Wrap[^a-z]/.test(name)))
+        (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name)))
     ) {
       name += "_";
     }

@@ -1,13 +1,9 @@
-// TODO: rename WrapFoo to FooOption?
+// TODO: toString on both structs and enums
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
-// TODO: toString on both structs and enums
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
-// TODO: .ts code:
-//   add linter
-//   do a pass at the .ts code to see if it can be simplified
 import {
   getClassName,
   toEnumConstantName,
@@ -128,9 +124,7 @@ class KotlinSourceFileGenerator {
     this.push(
       `sealed interface ${className.name}_OrMutable {\n`,
       `fun toFrozen(): ${qualifiedName};\n`,
-      "}\n\n",
-    );
-    this.push(
+      "}\n\n", // class _OrMutable
       '@kotlin.Suppress("UNUSED_PARAMETER")\n',
       `class ${className.name} private constructor(\n`,
     );
@@ -187,7 +181,7 @@ class KotlinSourceFileGenerator {
       const fieldName = toLowerCamelName(field);
       this.push(`${fieldName} = this.${fieldName},\n`);
     }
-    this.push(`);\n\n`);
+    this.push(");\n\n");
 
     if (fields.length) {
       this.push(
@@ -253,11 +247,17 @@ class KotlinSourceFileGenerator {
       const fieldName = toLowerCamelName(field);
       this.push(`${fieldName} = this.${fieldName},\n`);
     }
-    this.push("_unrecognizedFields = this._unrecognizedFields,\n", `);\n\n`);
+    this.push(
+      "_unrecognizedFields = this._unrecognizedFields,\n", //
+      `);\n\n`,
+    );
     this.writeMutableGetters(fields);
-    this.push("}\n\n");
-
-    this.push("companion object {\n", "val DEFAULT =\n", `${qualifiedName}(\n`);
+    this.push(
+      "}\n\n",
+      "companion object {\n",
+      "val DEFAULT =\n",
+      `${qualifiedName}(\n`,
+    );
     for (const field of fields) {
       this.push(
         field.isRecursive === "hard"
@@ -282,8 +282,9 @@ class KotlinSourceFileGenerator {
       const fieldName = toLowerCamelName(field);
       this.push(`${fieldName} = ${fieldName},\n`);
     }
-    this.push("_unrecognizedFields = null,\n", ");\n\n");
     this.push(
+      "_unrecognizedFields = null,\n",
+      ");\n\n",
       "private val serializerImpl = land.soia.internal.StructSerializer(\n",
       "defaultInstance = DEFAULT,\n",
       "newMutable = { Mutable() },\n",
@@ -392,8 +393,8 @@ class KotlinSourceFileGenerator {
         `VAL_${convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE")},\n`,
       );
     }
-    this.push("}\n\n");
     this.push(
+      "}\n\n",
       "class Unknown private constructor(\n",
       `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
@@ -423,9 +424,9 @@ class KotlinSourceFileGenerator {
     }
     for (const valueField of valueFields) {
       const valueType = valueField.type!;
-      const wrapClassName =
-        "Wrap" +
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      const optionClassName =
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        "Option";
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
         .toString();
@@ -435,13 +436,13 @@ class KotlinSourceFileGenerator {
       this.pushEol();
       if (initializerType === frozenType) {
         this.push(
-          `class ${wrapClassName}(\n`,
+          `class ${optionClassName}(\n`,
           `val value: ${initializerType},\n`,
           `) : ${qualifiedName}() {\n`,
         );
       } else {
         this.push(
-          `class ${wrapClassName} private constructor (\n`,
+          `class ${optionClassName} private constructor (\n`,
           `val value: ${frozenType},\n`,
           `) : ${qualifiedName}() {\n`,
           "constructor(\n",
@@ -453,14 +454,14 @@ class KotlinSourceFileGenerator {
       this.push(
         `override val kind get() = ${kindExpr};\n\n`,
         "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
-        `return other is ${qualifiedName}.${wrapClassName} && value == other.value;\n`,
+        `return other is ${qualifiedName}.${optionClassName} && value == other.value;\n`,
         "}\n\n",
         "override fun hashCode(): kotlin.Int {\n",
         "return this.value.hashCode() + ",
         String(simpleHash(valueField.name.text) | 0),
         ";\n",
         "}\n\n",
-        "}\n\n",  // class
+        "}\n\n", // class
       );
     }
 
@@ -483,9 +484,9 @@ class KotlinSourceFileGenerator {
       const createFunName =
         "create" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      const wrapClassName =
-        "Wrap" +
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      const optionClassName =
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        "Option";
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
         `fun ${createFunName}(\n`,
@@ -497,7 +498,7 @@ class KotlinSourceFileGenerator {
         this.push(`${fieldName}: ${type},\n`);
       }
       this.push(
-        `) = ${wrapClassName}(\n`,
+        `) = ${optionClassName}(\n`,
         `${structClassName.qualifiedName}(\n`,
       );
       for (const field of struct.fields) {
@@ -528,16 +529,16 @@ class KotlinSourceFileGenerator {
       const serializerExpression = typeSpeller.getSerializerExpression(
         valueField.type!,
       );
-      const wrapClassName =
-        "Wrap" +
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+      const optionClassName =
+        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        "Option";
       this.push(
         "serializerImpl.addValueField(\n",
         `${valueField.number},\n`,
         `"${valueField.name.text}",\n`,
-        `${wrapClassName}::class.java,\n`,
+        `${optionClassName}::class.java,\n`,
         `${serializerExpression},\n`,
-        `{ ${wrapClassName}(it) },\n`,
+        `{ ${optionClassName}(it) },\n`,
         ") { it.value };\n",
       );
     }
@@ -573,12 +574,14 @@ class KotlinSourceFileGenerator {
       method.responseType!,
     );
     this.push(
-      `val ${methodName}: land.soia.Method<\n${requestType},\n${responseType},\n> = land.soia.Method(\n`,
+      `val ${methodName}: land.soia.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
+      "land.soia.Method(\n",
       `"${methodName}",\n`,
       `${method.number},\n`,
       requestSerializerExpr + ",\n",
       responseSerializerExpr + ",\n",
-      ");\n\n",
+      ")\n",
+      "}\n\n",
     );
   }
 
@@ -621,6 +624,7 @@ class KotlinSourceFileGenerator {
           case "bytes":
             return "okio.ByteString.EMPTY";
         }
+        break;
       }
       case "array": {
         const itemType = this.typeSpeller.getKotlinType(type.item, "frozen");
@@ -712,8 +716,8 @@ class KotlinSourceFileGenerator {
     // where N is the length of this array.
     const contextStack: Array<"{" | "(" | "[" | "<" | ":" | "."> = [];
     // Returns the last element in `contextStack`.
-    const peakTop = () => contextStack.at(-1)!;
-    const getMatchingLeftBracket = (r: "}" | ")" | "]" | ">") => {
+    const peakTop = (): string => contextStack.at(-1)!;
+    const getMatchingLeftBracket = (r: "}" | ")" | "]" | ">"): string => {
       switch (r) {
         case "}":
           return "{";

@@ -26,11 +26,16 @@
     "format-soia:check": "cd e2e-test && soiac --fmt check && cd ..",
     "format": "prettier --write \"**/*.ts\" && npm run format-soia",
     "format:check": "prettier --check \"**/*.ts\" && npm run format-soia:check",
-    "test": "npm run build && cd e2e-test && soiac -r . && ./gradlew test && cd .."
+    "test": "npm run build && cd e2e-test && soiac -r . && ./gradlew test && cd ..",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "^20.11.5",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
     "prettier": "^3.2.4",
     "soiac": "^1.0.41",
     "ts-node": "^10.9.2",
