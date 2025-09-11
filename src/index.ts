@@ -3,7 +3,7 @@
 // TODO: try to add a private constructor to enum sealed class?
 // TODO: type descriptors
 // TODO: reflection?
-// TODO: equals, hashCode, toString on both structs and enums
+// TODO: toString on both structs and enums
 // TODO: possibility to specify package prefix after soiagen in the config
 // Make classes kotlinx serializable?
 // TODO: .ts code:
@@ -25,6 +25,7 @@ import {
   type RecordLocation,
   type ResolvedType,
   convertCase,
+  simpleHash,
 } from "soiac";
 import { z } from "zod";
 
@@ -212,7 +213,7 @@ class KotlinSourceFileGenerator {
       );
     }
     this.push(
-      "override fun equals(other: Any?): kotlin.Boolean {\n",
+      "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
       `return this === other || (other is ${qualifiedName}`,
       fields
         .map(
@@ -223,7 +224,7 @@ class KotlinSourceFileGenerator {
       ");\n",
       "}\n\n",
       "override fun hashCode(): kotlin.Int {\n",
-      "return kotlin.collections.listOf<Any?>(",
+      "return kotlin.collections.listOf<kotlin.Any?>(",
       fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
       ").hashCode();\n",
       "}\n\n",
@@ -398,14 +399,20 @@ class KotlinSourceFileGenerator {
       `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
       "override val kind get() = Kind.CONST_UNKNOWN;\n\n",
+      "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
+      `return other is ${qualifiedName}.Unknown;\n`,
+      "}\n\n",
+      "override fun hashCode(): kotlin.Int {\n",
+      "return -900601970;\n",
+      "}\n\n",
       "companion object {\n",
       "private val UNKNOWN = Unknown(null);\n\n",
       "internal fun _create(\n",
       `u: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       ") = if (u != null) Unknown(u) else UNKNOWN;\n",
       "}\n", // companion object
-      "}\n\n",
-    ); // class Unknown
+      "}\n\n", // class Unknown
+    );
     for (const constField of constantFields) {
       const kindExpr = `Kind.CONST_${constField.name.text}`;
       const constantName = toEnumConstantName(constField);
@@ -444,7 +451,18 @@ class KotlinSourceFileGenerator {
         );
       }
       const kindExpr = `Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
-      this.push(`override val kind get() = ${kindExpr};\n`, "}\n\n");
+      this.push(
+        `override val kind get() = ${kindExpr};\n\n`,
+        "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
+        `return other is ${qualifiedName}.${wrapClassName} && value == other.value;\n`,
+        "}\n\n",
+        "override fun hashCode(): kotlin.Int {\n",
+        "return this.value.hashCode() + ",
+        String(simpleHash(valueField.name.text) | 0),
+        ";\n",
+        "}\n\n",
+        "}\n\n",  // class
+      );
     }
 
     this.push(
