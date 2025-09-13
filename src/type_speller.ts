@@ -180,7 +180,7 @@ export class TypeSpeller {
           case "float64":
             return "land.soia.Serializers.float64";
           case "timestamp":
-            return "land.soia.Serializers.instant";
+            return "land.soia.Serializers.timestamp";
           case "string":
             return "land.soia.Serializers.string";
           case "bytes":

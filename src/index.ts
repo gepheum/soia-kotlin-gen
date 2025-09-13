@@ -1,9 +1,14 @@
+// TODO: add unit tests on generated classes
+// TODO: deploy typescript library
+// TODO: consider making .DEFAULT public (since it's redundant with ".mutable()") or alternatively deprecating ".mutable()" with no arg
 // TODO: toString on both structs and enums
+// TODO: migrate to Truth for unit tests
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
+// TODO: kotlin linter?
 // TODO: possibility to specify package prefix after soiagen in the config
-// Make classes kotlinx serializable?
+// TODO: documentation
 import {
   getClassName,
   toEnumConstantName,
@@ -221,6 +226,12 @@ class KotlinSourceFileGenerator {
       fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
       ").hashCode();\n",
       "}\n\n",
+      "override fun toString(): kotlin.String {\n",
+      "return land.soia.internal.toStringImpl(\n",
+      "this,\n",
+      `${qualifiedName}.serializerImpl,\n`,
+      ")\n",
+      "}\n\n",
     );
     this.push(
       `class Mutable internal constructor(\n`,
@@ -299,6 +310,7 @@ class KotlinSourceFileGenerator {
       const fieldName = toLowerCamelName(field);
       this.push(
         "serializerImpl.addField(\n",
+        `"${field.name.text}",\n`,
         `"${fieldName}",\n`,
         `${field.number},\n`,
         `${typeSpeller.getSerializerExpression(field.type!)},\n`,
@@ -467,6 +479,12 @@ class KotlinSourceFileGenerator {
 
     this.push(
       "abstract val kind: Kind;\n\n",
+      "override fun toString(): kotlin.String {\n",
+      "return land.soia.internal.toStringImpl(\n",
+      "this,\n",
+      `${qualifiedName}.serializerImpl,\n`,
+      ")\n",
+      "}\n\n",
       "companion object {\n",
       "val UNKNOWN = Unknown._create(null);\n\n",
     );
@@ -505,7 +523,10 @@ class KotlinSourceFileGenerator {
         const fieldName = toLowerCamelName(field);
         this.push(`${fieldName} = ${fieldName},\n`);
       }
-      this.push(")\n", ");\n\n");
+      this.push(
+        ")\n",
+        ");\n\n",
+      );
     }
     this.push(
       "private val serializerImpl =\n",
