@@ -1,8 +1,8 @@
 // TODO: add unit tests on generated classes
 // TODO: deploy typescript library
-// TODO: consider making .DEFAULT public (since it's redundant with ".mutable()") or alternatively deprecating ".mutable()" with no arg
-// TODO: toString on both structs and enums
-// TODO: migrate to Truth for unit tests
+// TODO: client unit tests:
+//   - migrate to Truth
+//   - rewrite everything
 // TODO: service client and service impl
 // TODO: type descriptors
 // TODO: reflection?
@@ -266,7 +266,7 @@ class KotlinSourceFileGenerator {
     this.push(
       "}\n\n",
       "companion object {\n",
-      "val DEFAULT =\n",
+      "private val DEFAULT =\n",
       `${qualifiedName}(\n`,
     );
     for (const field of fields) {
@@ -279,6 +279,7 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       ");\n\n",
+      "fun partial() = DEFAULT;\n\n",
       "fun partial(\n",
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
@@ -668,7 +669,7 @@ class KotlinSourceFileGenerator {
         const kotlinType = this.typeSpeller.getKotlinType(type, "frozen");
         switch (record.record.recordType) {
           case "struct": {
-            return `${kotlinType}.DEFAULT`;
+            return `${kotlinType}.partial()`;
           }
           case "enum": {
             return `${kotlinType}.UNKNOWN`;
