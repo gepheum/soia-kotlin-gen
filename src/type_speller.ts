@@ -27,7 +27,10 @@ export type TypeFlavor =
  *       strings and numbers are always immutable.
  */
 export class TypeSpeller {
-  constructor(readonly recordMap: ReadonlyMap<RecordKey, RecordLocation>) {}
+  constructor(
+    readonly recordMap: ReadonlyMap<RecordKey, RecordLocation>,
+    private readonly packagePrefix: string,
+  ) {}
 
   getKotlinType(
     type: ResolvedType,
@@ -52,7 +55,10 @@ export class TypeSpeller {
       case "record": {
         const recordLocation = this.recordMap.get(type.key)!;
         const record = recordLocation.record;
-        const className = getClassName(recordLocation).qualifiedName;
+        const className = getClassName(
+          recordLocation,
+          this.packagePrefix,
+        ).qualifiedName;
         if (record.recordType === "struct") {
           if (flavor === "frozen" || allRecordsFrozen) {
             return className;
@@ -160,7 +166,7 @@ export class TypeSpeller {
 
   getClassName(recordKey: RecordKey): ClassName {
     const record = this.recordMap.get(recordKey)!;
-    return getClassName(record);
+    return getClassName(record, this.packagePrefix);
   }
 
   getSerializerExpression(type: ResolvedType): string {
@@ -191,13 +197,14 @@ export class TypeSpeller {
       }
       case "array": {
         if (type.key) {
+          const keyChain = type.key.path.join(".");
           const path = type.key.path
             .map((f) => toLowerCamelName(f.name.text))
             .join(".");
           return (
             "land.soia.internal.keyedListSerializer(\n" +
             this.getSerializerExpression(type.item) +
-            `,\n"${path}",\n{ it.${path} },\n)`
+            `,\n"${keyChain}",\n{ it.${path} },\n)`
           );
         } else {
           return (

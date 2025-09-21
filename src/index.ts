@@ -1,13 +1,8 @@
 // TODO: add unit tests on generated classes
+//   TODO: include reflection
 // TODO: deploy typescript library
-// TODO: client unit tests:
-//   - migrate to Truth
-//   - rewrite everything
 // TODO: service client and service impl
-// TODO: type descriptors
-// TODO: reflection?
 // TODO: kotlin linter?
-// TODO: possibility to specify package prefix after soiagen in the config
 // TODO: documentation
 import {
   getClassName,
@@ -29,7 +24,12 @@ import {
 } from "soiac";
 import { z } from "zod";
 
-const Config = z.object({});
+const Config = z.object({
+  packagePrefix: z
+    .string()
+    .regex(/^soiagen(\.[a-z_$][a-z0-9_$]*)*$/)
+    .optional(),
+});
 
 type Config = z.infer<typeof Config>;
 
@@ -60,9 +60,10 @@ class KotlinSourceFileGenerator {
   constructor(
     private readonly inModule: Module,
     recordMap: ReadonlyMap<RecordKey, RecordLocation>,
-    private readonly config: Config,
+    config: Config,
   ) {
-    this.typeSpeller = new TypeSpeller(recordMap);
+    this.packagePrefix = config.packagePrefix ?? "soiagen";
+    this.typeSpeller = new TypeSpeller(recordMap, this.packagePrefix);
   }
 
   generate(): string {
@@ -79,7 +80,7 @@ class KotlinSourceFileGenerator {
       `);
 
     this.push(
-      "package soiagen.",
+      `package ${this.packagePrefix}.`,
       this.inModule.path.replace(/\.soia$/, "").replace("/", "."),
       ";\n\n",
       "import land.soia.internal.MustNameArguments as _MustNameArguments;\n",
@@ -124,7 +125,7 @@ class KotlinSourceFileGenerator {
     const { typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = struct.record;
-    const className = getClassName(struct);
+    const className = this.getClassName(struct);
     const { qualifiedName } = className;
     this.push(
       `sealed interface ${className.name}_OrMutable {\n`,
@@ -298,13 +299,15 @@ class KotlinSourceFileGenerator {
       "_unrecognizedFields = null,\n",
       ");\n\n",
       "private val serializerImpl = land.soia.internal.StructSerializer(\n",
+      `recordId = "${getRecordId(struct)}",\n`,
       "defaultInstance = DEFAULT,\n",
-      "newMutable = { Mutable() },\n",
-      "toFrozen = { it.toFrozen() },\n",
+      "newMutableFn = { if (it != null) it.toMutable() else Mutable() },\n",
+      "toFrozenFn = { it.toFrozen() },\n",
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
       ");\n\n",
       "val SERIALIZER = land.soia.internal.makeSerializer(serializerImpl);\n\n",
+      "val TYPE_DESCRIPTOR get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const field of fields) {
@@ -362,7 +365,7 @@ class KotlinSourceFileGenerator {
       } else if (type.kind === "record") {
         const record = this.typeSpeller.recordMap.get(type.key)!;
         if (record.record.recordType === "struct") {
-          const structQualifiedName = getClassName(record).qualifiedName;
+          const structQualifiedName = this.getClassName(record).qualifiedName;
           bodyLines = [
             "return when (value) {\n",
             `is ${structQualifiedName} -> {\n`,
@@ -394,7 +397,7 @@ class KotlinSourceFileGenerator {
     const { fields } = record.record;
     const constantFields = fields.filter((f) => !f.type);
     const valueFields = fields.filter((f) => f.type);
-    const className = getClassName(record);
+    const className = this.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(`sealed class ${className.name} private constructor() {\n`);
     this.push(`enum class Kind {\n`, `CONST_UNKNOWN,\n`);
@@ -499,7 +502,7 @@ class KotlinSourceFileGenerator {
       if (struct.recordType !== "struct") {
         continue;
       }
-      const structClassName = getClassName(structLocation);
+      const structClassName = this.getClassName(structLocation);
       const createFunName =
         "create" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
@@ -524,18 +527,18 @@ class KotlinSourceFileGenerator {
         const fieldName = toLowerCamelName(field);
         this.push(`${fieldName} = ${fieldName},\n`);
       }
-      this.push(
-        ")\n",
-        ");\n\n",
-      );
+      this.push(")\n", ");\n\n");
     }
     this.push(
       "private val serializerImpl =\n",
       `land.soia.internal.EnumSerializer.create<${qualifiedName}, ${qualifiedName}.Unknown>(\n`,
-      "UNKNOWN,\n",
-      `{ ${qualifiedName}.Unknown._create(it) },\n`,
-      ") { it._unrecognized };\n\n",
+      `recordId = "${getRecordId(record)}",\n`,
+      "unknownInstance = UNKNOWN,\n",
+      `wrapUnrecognized = { ${qualifiedName}.Unknown._create(it) },\n`,
+      "getUnrecognized = { it._unrecognized },\n)",
+      ";\n\n",
       "val SERIALIZER = land.soia.internal.makeSerializer(serializerImpl);\n\n",
+      "val TYPE_DESCRIPTOR get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const constField of constantFields) {
@@ -723,6 +726,10 @@ class KotlinSourceFileGenerator {
     }
   }
 
+  private getClassName(recordLocation: RecordLocation) {
+    return getClassName(recordLocation, this.packagePrefix);
+  }
+
   private push(...code: string[]): void {
     this.code += code.join("");
   }
@@ -830,7 +837,16 @@ class KotlinSourceFileGenerator {
   }
 
   private readonly typeSpeller: TypeSpeller;
+  private readonly packagePrefix: string;
   private code = "";
+}
+
+function getRecordId(struct: RecordLocation): string {
+  const modulePath = struct.modulePath;
+  const qualifiedRecordName = struct.recordAncestors
+    .map((r) => r.name.text)
+    .join(".");
+  return `${modulePath}:${qualifiedRecordName}`;
 }
 
 export const GENERATOR = new KotlinCodeGenerator();

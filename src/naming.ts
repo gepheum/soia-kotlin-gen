@@ -67,21 +67,26 @@ const TOP_LEVEL_PACKAGE_NAMES: ReadonlySet<string> = new Set<string>([
 ]);
 
 export function toEnumConstantName(field: Field): string {
-  return field.name.text === "SERIALIZER" ? "SERIALIZER_" : field.name.text;
+  return RECORD_GENERATED_CONSTANT_NAMES.has(field.name.text)
+    ? field.name.text + "_"
+    : field.name.text;
 }
 
 export interface ClassName {
   /** The name right after the 'class' keyword.. */
   name: string;
   /**
-   * Fully qualified class name relative to a given module.
-   * Examples: 'Foo', 'Foo.Bar', 'other.module.Foo.Bar'.
+   * Fully qualified class name.
+   * Examples: 'soiagen.Foo', 'soiagen.Foo.Bar'
    */
   qualifiedName: string;
 }
 
 /** Returns the name of the frozen Kotlin class for the given record. */
-export function getClassName(record: RecordLocation): ClassName {
+export function getClassName(
+  record: RecordLocation,
+  packagePrefix: string,
+): ClassName {
   const { recordAncestors } = record;
   const parts: string[] = [];
   for (let i = 0; i < recordAncestors.length; ++i) {
@@ -102,7 +107,7 @@ export function getClassName(record: RecordLocation): ClassName {
 
   const path = record.modulePath;
   const importPath = path.replace(/\.soia$/, "").replace("/", ".");
-  const qualifiedName = `soiagen.${importPath}.${parts.join(".")}`;
+  const qualifiedName = `${packagePrefix}.${importPath}.${parts.join(".")}`;
 
   return { name, qualifiedName };
 }
@@ -114,4 +119,9 @@ const STRUCT_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set(["Mutable"]);
 const ENUM_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set([
   "Kind",
   "Unknown",
+]);
+
+const RECORD_GENERATED_CONSTANT_NAMES: ReadonlySet<string> = new Set([
+  "SERIALIZER",
+  "TYPE_DESCRIPTOR",
 ]);
