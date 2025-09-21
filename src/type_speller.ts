@@ -1,5 +1,4 @@
-import { ClassName, getClassName } from "./naming.js";
-import { toLowerCamelName } from "./naming.js";
+import { ClassName, Namer } from "./naming.js";
 import type { RecordKey, RecordLocation, ResolvedType } from "soiac";
 
 export type TypeFlavor =
@@ -29,7 +28,7 @@ export type TypeFlavor =
 export class TypeSpeller {
   constructor(
     readonly recordMap: ReadonlyMap<RecordKey, RecordLocation>,
-    private readonly packagePrefix: string,
+    private readonly namer: Namer,
   ) {}
 
   getKotlinType(
@@ -55,10 +54,7 @@ export class TypeSpeller {
       case "record": {
         const recordLocation = this.recordMap.get(type.key)!;
         const record = recordLocation.record;
-        const className = getClassName(
-          recordLocation,
-          this.packagePrefix,
-        ).qualifiedName;
+        const className = this.namer.getClassName(recordLocation).qualifiedName;
         if (record.recordType === "struct") {
           if (flavor === "frozen" || allRecordsFrozen) {
             return className;
@@ -166,7 +162,7 @@ export class TypeSpeller {
 
   getClassName(recordKey: RecordKey): ClassName {
     const record = this.recordMap.get(recordKey)!;
-    return getClassName(record, this.packagePrefix);
+    return this.namer.getClassName(record);
   }
 
   getSerializerExpression(type: ResolvedType): string {
@@ -199,7 +195,7 @@ export class TypeSpeller {
         if (type.key) {
           const keyChain = type.key.path.join(".");
           const path = type.key.path
-            .map((f) => toLowerCamelName(f.name.text))
+            .map((f) => this.namer.toLowerCamelName(f.name.text))
             .join(".");
           return (
             "land.soia.internal.keyedListSerializer(\n" +

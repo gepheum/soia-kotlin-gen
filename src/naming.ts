@@ -1,12 +1,54 @@
 import { Field, convertCase } from "soiac";
 import { RecordLocation } from "soiac";
 
-export function toLowerCamelName(field: Field | string): string {
-  const inputName = typeof field === "string" ? field : field.name.text;
-  return KOTLIN_HARD_KEYWORDS.has(inputName) ||
-    TOP_LEVEL_PACKAGE_NAMES.has(inputName)
-    ? inputName + "_"
-    : convertCase(inputName, "lower_underscore", "lowerCamel");
+export class Namer {
+  private readonly genPackageFirstName: string;
+
+  constructor(private readonly packagePrefix: string) {
+    if (packagePrefix.length <= 0) {
+      this.genPackageFirstName = "soiagen";
+    } else {
+      this.genPackageFirstName = packagePrefix.split(".")[0]!!;
+    }
+  }
+
+  toLowerCamelName(field: Field | string): string {
+    const inputName = typeof field === "string" ? field : field.name.text;
+    const nameConflict =
+      KOTLIN_HARD_KEYWORDS.has(inputName) ||
+      TOP_LEVEL_PACKAGE_NAMES.has(inputName) ||
+      inputName === this.genPackageFirstName;
+    return nameConflict
+      ? inputName + "_"
+      : convertCase(inputName, "lower_underscore", "lowerCamel");
+  }
+
+  /** Returns the name of the frozen Kotlin class for the given record. */
+  getClassName(record: RecordLocation): ClassName {
+    const { recordAncestors } = record;
+    const parts: string[] = [];
+    for (let i = 0; i < recordAncestors.length; ++i) {
+      const record = recordAncestors[i]!;
+      let name = record.name.text;
+      const parentType = i > 0 ? recordAncestors[i - 1]!.recordType : undefined;
+      if (
+        (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
+        (parentType === "enum" &&
+          (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name)))
+      ) {
+        name += "_";
+      }
+      parts.push(name);
+    }
+
+    const name = parts.at(-1)!;
+
+    const path = record.modulePath;
+    const importPath = path.replace(/\.soia$/, "").replace("/", ".");
+    const qualifiedName = `${this.packagePrefix}soiagen.${importPath}.${parts.join(".")}`;
+
+    return { name, qualifiedName };
+  }
 }
 
 const KOTLIN_HARD_KEYWORDS: ReadonlySet<string> = new Set([
@@ -63,7 +105,6 @@ const TOP_LEVEL_PACKAGE_NAMES: ReadonlySet<string> = new Set<string>([
   "java",
   "kotlin",
   "okio",
-  "soiagen",
 ]);
 
 export function toEnumConstantName(field: Field): string {
@@ -80,36 +121,6 @@ export interface ClassName {
    * Examples: 'soiagen.Foo', 'soiagen.Foo.Bar'
    */
   qualifiedName: string;
-}
-
-/** Returns the name of the frozen Kotlin class for the given record. */
-export function getClassName(
-  record: RecordLocation,
-  packagePrefix: string,
-): ClassName {
-  const { recordAncestors } = record;
-  const parts: string[] = [];
-  for (let i = 0; i < recordAncestors.length; ++i) {
-    const record = recordAncestors[i]!;
-    let name = record.name.text;
-    const parentType = i > 0 ? recordAncestors[i - 1]!.recordType : undefined;
-    if (
-      (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
-      (parentType === "enum" &&
-        (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name)))
-    ) {
-      name += "_";
-    }
-    parts.push(name);
-  }
-
-  const name = parts.at(-1)!;
-
-  const path = record.modulePath;
-  const importPath = path.replace(/\.soia$/, "").replace("/", ".");
-  const qualifiedName = `${packagePrefix}.${importPath}.${parts.join(".")}`;
-
-  return { name, qualifiedName };
 }
 
 /** Generated types nested within a struct class. */

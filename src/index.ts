@@ -4,11 +4,7 @@
 // TODO: service client and service impl
 // TODO: kotlin linter?
 // TODO: documentation
-import {
-  getClassName,
-  toEnumConstantName,
-  toLowerCamelName,
-} from "./naming.js";
+import { Namer, toEnumConstantName } from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
   type CodeGenerator,
@@ -27,7 +23,7 @@ import { z } from "zod";
 const Config = z.object({
   packagePrefix: z
     .string()
-    .regex(/^soiagen(\.[a-z_$][a-z0-9_$]*)*$/)
+    .regex(/^([a-z_$][a-z0-9_$]*\.)*$/)
     .optional(),
 });
 
@@ -62,8 +58,9 @@ class KotlinSourceFileGenerator {
     recordMap: ReadonlyMap<RecordKey, RecordLocation>,
     config: Config,
   ) {
-    this.packagePrefix = config.packagePrefix ?? "soiagen";
-    this.typeSpeller = new TypeSpeller(recordMap, this.packagePrefix);
+    this.packagePrefix = config.packagePrefix ?? "";
+    this.namer = new Namer(this.packagePrefix);
+    this.typeSpeller = new TypeSpeller(recordMap, this.namer);
   }
 
   generate(): string {
@@ -80,7 +77,7 @@ class KotlinSourceFileGenerator {
       `);
 
     this.push(
-      `package ${this.packagePrefix}.`,
+      `package ${this.packagePrefix}soiagen.`,
       this.inModule.path.replace(/\.soia$/, "").replace("/", "."),
       ";\n\n",
       "import land.soia.internal.MustNameArguments as _MustNameArguments;\n",
@@ -122,10 +119,10 @@ class KotlinSourceFileGenerator {
   }
 
   private writeClassesForStruct(struct: RecordLocation): void {
-    const { typeSpeller } = this;
+    const { namer, typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = struct.record;
-    const className = this.getClassName(struct);
+    const className = namer.getClassName(struct);
     const { qualifiedName } = className;
     this.push(
       `sealed interface ${className.name}_OrMutable {\n`,
@@ -135,7 +132,7 @@ class KotlinSourceFileGenerator {
       `class ${className.name} private constructor(\n`,
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       const type = typeSpeller.getKotlinType(field.type!, "frozen");
       if (field.isRecursive === "hard") {
         this.push(`private val __${fieldName}: ${type}?,\n`);
@@ -150,7 +147,7 @@ class KotlinSourceFileGenerator {
     );
     for (const field of fields) {
       if (field.isRecursive === "hard") {
-        const fieldName = toLowerCamelName(field);
+        const fieldName = namer.toLowerCamelName(field);
         const defaultExpr = this.getDefaultExpression(field.type!);
         this.push(
           `val ${fieldName} get() = __${fieldName} ?: ${defaultExpr};\n`,
@@ -163,7 +160,7 @@ class KotlinSourceFileGenerator {
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       this.push(`${fieldName}: ${type},\n`);
     }
@@ -173,7 +170,7 @@ class KotlinSourceFileGenerator {
       "): this(\n",
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       this.push(this.toFrozenExpression(fieldName, field.type!), ",\n");
     }
     this.push(
@@ -184,7 +181,7 @@ class KotlinSourceFileGenerator {
       `fun toMutable() = Mutable(\n`,
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       this.push(`${fieldName} = this.${fieldName},\n`);
     }
     this.push(");\n\n");
@@ -195,13 +192,13 @@ class KotlinSourceFileGenerator {
         "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
       );
       for (const field of fields) {
-        const fieldName = toLowerCamelName(field);
+        const fieldName = namer.toLowerCamelName(field);
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
         this.push(`${fieldName}: ${type} =\nthis.${fieldName},\n`);
       }
       this.push(`) = ${qualifiedName}(\n`);
       for (const field of fields) {
-        const fieldName = toLowerCamelName(field);
+        const fieldName = namer.toLowerCamelName(field);
         this.push(this.toFrozenExpression(fieldName, field.type!), ",\n");
       }
       this.push(
@@ -217,14 +214,14 @@ class KotlinSourceFileGenerator {
       fields
         .map(
           (f) =>
-            ` && this.${toLowerCamelName(f)} == other.${toLowerCamelName(f)}`,
+            ` && this.${namer.toLowerCamelName(f)} == other.${namer.toLowerCamelName(f)}`,
         )
         .join(""),
       ");\n",
       "}\n\n",
       "override fun hashCode(): kotlin.Int {\n",
       "return kotlin.collections.listOf<kotlin.Any?>(",
-      fields.map((f) => `this.${toLowerCamelName(f)}`).join(", "),
+      fields.map((f) => `this.${namer.toLowerCamelName(f)}`).join(", "),
       ").hashCode();\n",
       "}\n\n",
       "override fun toString(): kotlin.String {\n",
@@ -239,7 +236,7 @@ class KotlinSourceFileGenerator {
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       const allRecordsFrozen = !!field.isRecursive;
       const type = typeSpeller.getKotlinType(
         field.type!,
@@ -256,7 +253,7 @@ class KotlinSourceFileGenerator {
       `override fun toFrozen() = ${qualifiedName}(\n`,
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       this.push(`${fieldName} = this.${fieldName},\n`);
     }
     this.push(
@@ -285,14 +282,14 @@ class KotlinSourceFileGenerator {
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       const type = typeSpeller.getKotlinType(field.type!, "initializer");
       const defaultExpr = this.getDefaultExpression(field.type!);
       this.push(`${fieldName}: ${type} =\n${defaultExpr},\n`);
     }
     this.push(`) = ${qualifiedName}(\n`);
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       this.push(`${fieldName} = ${fieldName},\n`);
     }
     this.push(
@@ -311,7 +308,7 @@ class KotlinSourceFileGenerator {
       "init {\n",
     );
     for (const field of fields) {
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       this.push(
         "serializerImpl.addField(\n",
         `"${field.name.text}",\n`,
@@ -338,13 +335,13 @@ class KotlinSourceFileGenerator {
   }
 
   private writeMutableGetters(fields: readonly Field[]): void {
-    const { typeSpeller } = this;
+    const { namer, typeSpeller } = this;
     for (const field of fields) {
       if (field.isRecursive) {
         continue;
       }
       const type = field.type!;
-      const fieldName = toLowerCamelName(field);
+      const fieldName = namer.toLowerCamelName(field);
       const mutableGetterName =
         "mutable" +
         convertCase(field.name.text, "lower_underscore", "UpperCamel");
@@ -365,7 +362,7 @@ class KotlinSourceFileGenerator {
       } else if (type.kind === "record") {
         const record = this.typeSpeller.recordMap.get(type.key)!;
         if (record.record.recordType === "struct") {
-          const structQualifiedName = this.getClassName(record).qualifiedName;
+          const structQualifiedName = namer.getClassName(record).qualifiedName;
           bodyLines = [
             "return when (value) {\n",
             `is ${structQualifiedName} -> {\n`,
@@ -392,12 +389,12 @@ class KotlinSourceFileGenerator {
   }
 
   private writeClassForEnum(record: RecordLocation): void {
-    const { typeSpeller } = this;
+    const { namer, typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = record.record;
     const constantFields = fields.filter((f) => !f.type);
     const valueFields = fields.filter((f) => f.type);
-    const className = this.getClassName(record);
+    const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(`sealed class ${className.name} private constructor() {\n`);
     this.push(`enum class Kind {\n`, `CONST_UNKNOWN,\n`);
@@ -502,7 +499,7 @@ class KotlinSourceFileGenerator {
       if (struct.recordType !== "struct") {
         continue;
       }
-      const structClassName = this.getClassName(structLocation);
+      const structClassName = namer.getClassName(structLocation);
       const createFunName =
         "create" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
@@ -515,7 +512,7 @@ class KotlinSourceFileGenerator {
         "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
       );
       for (const field of struct.fields) {
-        const fieldName = toLowerCamelName(field);
+        const fieldName = namer.toLowerCamelName(field);
         const type = typeSpeller.getKotlinType(field.type!, "initializer");
         this.push(`${fieldName}: ${type},\n`);
       }
@@ -524,7 +521,7 @@ class KotlinSourceFileGenerator {
         `${structClassName.qualifiedName}(\n`,
       );
       for (const field of struct.fields) {
-        const fieldName = toLowerCamelName(field);
+        const fieldName = namer.toLowerCamelName(field);
         this.push(`${fieldName} = ${fieldName},\n`);
       }
       this.push(")\n", ");\n\n");
@@ -684,6 +681,7 @@ class KotlinSourceFileGenerator {
   }
 
   private toFrozenExpression(inputExpr: string, type: ResolvedType): string {
+    const { namer } = this;
     switch (type.kind) {
       case "primitive": {
         return inputExpr;
@@ -692,7 +690,7 @@ class KotlinSourceFileGenerator {
         const itemToFrozenExpr = this.toFrozenExpression("it", type.item);
         if (type.key) {
           const path = type.key.path
-            .map((f) => toLowerCamelName(f.name.text))
+            .map((f) => namer.toLowerCamelName(f.name.text))
             .join(".");
           if (itemToFrozenExpr === "it") {
             return `land.soia.internal.toKeyedList(${inputExpr}, "${path}", { it.${path} })`;
@@ -724,10 +722,6 @@ class KotlinSourceFileGenerator {
         }
       }
     }
-  }
-
-  private getClassName(recordLocation: RecordLocation) {
-    return getClassName(recordLocation, this.packagePrefix);
   }
 
   private push(...code: string[]): void {
@@ -838,6 +832,7 @@ class KotlinSourceFileGenerator {
 
   private readonly typeSpeller: TypeSpeller;
   private readonly packagePrefix: string;
+  private readonly namer: Namer;
   private code = "";
 }
 
