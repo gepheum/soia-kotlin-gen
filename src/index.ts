@@ -3,7 +3,6 @@
 // TODO: deploy typescript library
 // TODO: service client and service impl
 // TODO: kotlin linter?
-// TODO: documentation
 import { Namer, toEnumConstantName } from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
@@ -65,14 +64,15 @@ class KotlinSourceFileGenerator {
 
   generate(): string {
     // http://patorjk.com/software/taag/#f=Doom&t=Do%20not%20edit
-    this.push(`
-      //  ______                        _               _  _  _
+    this.push(`//  ______                        _               _  _  _
       //  |  _  \\                      | |             | |(_)| |
       //  | | | |  ___    _ __    ___  | |_    ___   __| | _ | |_
       //  | | | | / _ \\  | '_ \\  / _ \\ | __|  / _ \\ / _\` || || __|
       //  | |/ / | (_) | | | | || (_) || |_  |  __/| (_| || || |_ 
       //  |___/   \\___/  |_| |_| \\___/  \\__|  \\___| \\__,_||_| \\__|
       //
+
+      @file:Suppress("ktlint")
 
       `);
 
@@ -176,7 +176,7 @@ class KotlinSourceFileGenerator {
     this.push(
       "_unrecognizedFields,\n",
       ") {}\n\n",
-      '@kotlin.Deprecated("Already frozen")\n',
+      '@kotlin.Deprecated("Already frozen", kotlin.ReplaceWith("this"))\n',
       "override fun toFrozen() = this;\n\n",
       `fun toMutable() = Mutable(\n`,
     );
@@ -204,7 +204,7 @@ class KotlinSourceFileGenerator {
       this.push(
         "this._unrecognizedFields,\n",
         ");\n\n",
-        '@kotlin.Deprecated("No point in creating an exact copy of an immutable object")\n',
+        '@kotlin.Deprecated("No point in creating an exact copy of an immutable object", kotlin.ReplaceWith("this"))\n',
         "fun copy() = this;\n\n",
       );
     }
@@ -298,7 +298,7 @@ class KotlinSourceFileGenerator {
       "private val serializerImpl = land.soia.internal.StructSerializer(\n",
       `recordId = "${getRecordId(struct)}",\n`,
       "defaultInstance = DEFAULT,\n",
-      "newMutableFn = { if (it != null) it.toMutable() else Mutable() },\n",
+      "newMutableFn = { it?.toMutable() ?: Mutable() },\n",
       "toFrozenFn = { it.toFrozen() },\n",
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
@@ -408,22 +408,18 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       "}\n\n",
-      "class Unknown private constructor(\n",
+      'class Unknown @kotlin.Deprecated("For internal use", kotlin.ReplaceWith("',
+      qualifiedName,
+      '.UNKNOWN")) internal constructor(\n',
       `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
       "override val kind get() = Kind.CONST_UNKNOWN;\n\n",
       "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
-      `return other is ${qualifiedName}.Unknown;\n`,
+      "return other is Unknown;\n",
       "}\n\n",
       "override fun hashCode(): kotlin.Int {\n",
       "return -900601970;\n",
       "}\n\n",
-      "companion object {\n",
-      "private val UNKNOWN = Unknown(null);\n\n",
-      "internal fun _create(\n",
-      `u: _UnrecognizedEnum<${qualifiedName}>?,\n`,
-      ") = if (u != null) Unknown(u) else UNKNOWN;\n",
-      "}\n", // companion object
       "}\n\n", // class Unknown
     );
     for (const constField of constantFields) {
@@ -431,8 +427,11 @@ class KotlinSourceFileGenerator {
       const constantName = toEnumConstantName(constField);
       this.push(
         `object ${constantName} : ${qualifiedName}() {\n`,
-        `override val kind get() = ${kindExpr};\n`,
-        `}\n\n`,
+        `override val kind get() = ${kindExpr};\n\n`,
+        "init {\n",
+        "maybeInitSerializer();\n",
+        "}\n",
+        `}\n\n`,  // object
       );
     }
     for (const valueField of valueFields) {
@@ -487,7 +486,7 @@ class KotlinSourceFileGenerator {
       ")\n",
       "}\n\n",
       "companion object {\n",
-      "val UNKNOWN = Unknown._create(null);\n\n",
+      'val UNKNOWN = @kotlin.Suppress("DEPRECATION") Unknown(null);\n\n',
     );
     for (const valueField of valueFields) {
       const type = valueField.type!;
@@ -528,16 +527,26 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       "private val serializerImpl =\n",
-      `land.soia.internal.EnumSerializer.create<${qualifiedName}, ${qualifiedName}.Unknown>(\n`,
+      `land.soia.internal.EnumSerializer.create<${qualifiedName}, Unknown>(\n`,
       `recordId = "${getRecordId(record)}",\n`,
       "unknownInstance = UNKNOWN,\n",
-      `wrapUnrecognized = { ${qualifiedName}.Unknown._create(it) },\n`,
+      'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
       ";\n\n",
       "val SERIALIZER = land.soia.internal.makeSerializer(serializerImpl);\n\n",
       "val TYPE_DESCRIPTOR get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
+    for (const constField of constantFields) {
+      this.push(toEnumConstantName(constField), ";\n");
+    }
+    this.push("maybeInitSerializer();\n");
+    this.push(
+      "}\n\n",  // init
+      `private var counter = ${constantFields.length + 1};\n\n`,
+      "private fun maybeInitSerializer() {\n",
+      "counter -= 1;\n",
+      "if (counter == 0) {\n");
     for (const constField of constantFields) {
       this.push(
         "serializerImpl.addConstantField(\n",
@@ -564,11 +573,15 @@ class KotlinSourceFileGenerator {
         ") { it.value };\n",
       );
     }
+    for (const removedNumber of record.record.removedNumbers) {
+      this.push(`serializerImpl.addRemovedNumber(${removedNumber});\n`);
+    }
     this.push(
       "serializerImpl.finalizeEnum();\n",
-      "}\n", // init
-      "}\n\n",
-    ); // companion object
+      "}\n",
+      "}\n", // maybeInitSerializer
+      "}\n\n", // companion object
+    );
 
     // Write the classes for the records nested in `record`.
     const nestedRecords = record.record.nestedRecords.map(

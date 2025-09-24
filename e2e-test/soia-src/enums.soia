@@ -46,3 +46,16 @@ enum Kind {
   struct WrapKind {}
   wrap_kind: WrapKind;
 }
+
+enum Status {
+  OK;
+
+  removed;
+  removed;
+
+  struct Error {
+    code: int32;
+    message: string;
+  }
+  error: Error;
+}
