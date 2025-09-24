@@ -1,4 +1,4 @@
-// TODO: serialization
+// TODO: serialization, unknown fields
 
 package land.soia
 
@@ -12,6 +12,7 @@ import land.soia.reflection.StructDescriptor
 import land.soia.reflection.asJsonCode
 import land.soia.reflection.parseTypeDescriptor
 import org.junit.jupiter.api.Test
+import soiagen.enums.Status
 import java.time.Instant
 
 class Tests {
@@ -469,24 +470,27 @@ class Tests {
 
     @Test
     fun `test generated struct - recursive`() {
-        val rec = soiagen.structs.RecA.partial(
-            a = soiagen.structs.RecA.partial(
-                b = soiagen.structs.RecB.partial()
+        val rec =
+            soiagen.structs.RecA.partial(
+                a =
+                    soiagen.structs.RecA.partial(
+                        b = soiagen.structs.RecB.partial(),
+                    ),
             )
-        )
         assertThat(
-            rec
+            rec,
         ).isEqualTo(
             soiagen.structs.RecA.partial(
-                a = soiagen.structs.RecA.partial(
-                    b = soiagen.structs.RecB.partial()
-                )
-            )
+                a =
+                    soiagen.structs.RecA.partial(
+                        b = soiagen.structs.RecB.partial(),
+                    ),
+            ),
         )
         assertThat(
-            rec.toString()
+            rec.toString(),
         ).isEqualTo(
-            "RecA.partial()"
+            "RecA.partial()",
         )
     }
 
@@ -561,98 +565,206 @@ class Tests {
         )
     }
 
-//    @Test
-//    fun `test generated enum - toString()`() {
-//        assertThat(
-//            soiagen.enums.Status.OK.toString(),
-//        ).isEqualTo(
-//            "Status.OK",
-//        )
-//        assertThat(
-//            soiagen.enums.Status.ErrorOption(
-//                soiagen.enums.Status.Error(
-//                    code = 100,
-//                    message = "The Message",
-//                ),
-//            ).toString(),
-//        ).isEqualTo(
-//            "Status.ErrorOption(\n" +
-//                "  Status.Error(\n" +
-//                "    code = 100,\n" +
-//                "    message = \"The Message\",\n" +
-//                "  )\n" +
-//                ")",
-//        )
-//        assertThat(
-//            soiagen.enums.Status.createError(
-//                code = 100,
-//                message = "The Message",
-//            ).toString(),
-//        ).isEqualTo(
-//            "Status.ErrorOption(\n" +
-//                "  Status.Error(\n" +
-//                "    code = 100,\n" +
-//                "    message = \"The Message\",\n" +
-//                "  )\n" +
-//                ")",
-//        )
-//        assertThat(
-//            soiagen.enums.Status.UNKNOWN.toString(),
-//        ).isEqualTo(
-//            "Status.UNKNOWN",
-//        )
-//    }
-//
-//    @Test
-//    fun `test generated enum - equals() and hashCode`() {
-//        val set = mutableSetOf<soiagen.enums.Status>()
-//        set.add(soiagen.enums.Status.OK)
-//        set.add(soiagen.enums.Status.OK)
-//        set.add(soiagen.enums.Status.UNKNOWN)
-//        set.add(soiagen.enums.Status.UNKNOWN)
-//        set.add(
-//            soiagen.enums.Status.ErrorOption(
-//                soiagen.enums.Status.Error(
-//                    code = 100,
-//                    message = "The Message",
-//                ),
-//            ),
-//        )
-//        set.add(
-//            soiagen.enums.Status.ErrorOption(
-//                soiagen.enums.Status.Error(
-//                    code = 100,
-//                    message = "The Message",
-//                ),
-//            ),
-//        )
-//        set.add(
-//            soiagen.enums.Status.ErrorOption(
-//                soiagen.enums.Status.Error(
-//                    code = 101,
-//                    message = "The Other Message",
-//                ),
-//            ),
-//        )
-//        assertThat(
-//            set,
-//        ).isEqualTo(
-//            setOf(
-//                soiagen.enums.Status.OK,
-//                soiagen.enums.Status.UNKNOWN,
-//                soiagen.enums.Status.ErrorOption(
-//                    soiagen.enums.Status.Error(
-//                        code = 100,
-//                        message = "The Message",
-//                    ),
-//                ),
-//                soiagen.enums.Status.ErrorOption(
-//                    soiagen.enums.Status.Error(
-//                        code = 101,
-//                        message = "The Other Message",
-//                    ),
-//                ),
-//            ),
-//        )
-//    }
+    @Test
+    fun `test generated enum - toString()`() {
+        assertThat(
+            soiagen.enums.Status.OK.toString(),
+        ).isEqualTo(
+            "Status.OK",
+        )
+        assertThat(
+            soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.Error(
+                    code = 100,
+                    message = "The Message",
+                ),
+            ).toString(),
+        ).isEqualTo(
+            "Status.ErrorOption(\n" +
+                "  Status.Error(\n" +
+                "    code = 100,\n" +
+                "    message = \"The Message\",\n" +
+                "  )\n" +
+                ")",
+        )
+        assertThat(
+            soiagen.enums.Status.createError(
+                code = 100,
+                message = "The Message",
+            ).toString(),
+        ).isEqualTo(
+            "Status.ErrorOption(\n" +
+                "  Status.Error(\n" +
+                "    code = 100,\n" +
+                "    message = \"The Message\",\n" +
+                "  )\n" +
+                ")",
+        )
+        assertThat(
+            soiagen.enums.Status.UNKNOWN.toString(),
+        ).isEqualTo(
+            "Status.UNKNOWN",
+        )
+    }
+
+    @Test
+    fun `test generated enum - equals() and hashCode`() {
+        val set = mutableSetOf<soiagen.enums.Status>()
+        set.add(soiagen.enums.Status.OK)
+        set.add(soiagen.enums.Status.OK)
+        set.add(soiagen.enums.Status.UNKNOWN)
+        set.add(soiagen.enums.Status.UNKNOWN)
+        set.add(
+            soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.Error(
+                    code = 100,
+                    message = "The Message",
+                ),
+            ),
+        )
+        set.add(
+            soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.Error(
+                    code = 100,
+                    message = "The Message",
+                ),
+            ),
+        )
+        set.add(
+            soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.Error(
+                    code = 101,
+                    message = "The Other Message",
+                ),
+            ),
+        )
+        assertThat(
+            set,
+        ).isEqualTo(
+            setOf(
+                soiagen.enums.Status.OK,
+                soiagen.enums.Status.UNKNOWN,
+                soiagen.enums.Status.ErrorOption(
+                    soiagen.enums.Status.Error(
+                        code = 100,
+                        message = "The Message",
+                    ),
+                ),
+                soiagen.enums.Status.ErrorOption(
+                    soiagen.enums.Status.Error(
+                        code = 101,
+                        message = "The Other Message",
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fun `test generated enum - condition on enum`(status: Status) {
+        when (status) {
+            is Status.Unknown -> {}
+            is Status.OK -> {}
+            is Status.ErrorOption -> {}
+        }
+    }
+
+    @Test
+    fun `test generated struct - serialize and deserialize`() {
+        val triangle =
+            soiagen.structs.Triangle(
+                color =
+                    soiagen.structs.Color(
+                        r = 127,
+                        g = 128,
+                        b = 139,
+                    ),
+                points =
+                    listOf(
+                        soiagen.structs.Point.Mutable(x = 1, y = 2),
+                    ),
+            )
+        val serializer = soiagen.structs.Triangle.SERIALIZER
+        assertThat(
+            serializer.toJsonCode(triangle),
+        ).isEqualTo(
+            "[[127,128,139],[[1,2]]]",
+        )
+        assertThat(
+            serializer.fromJson(serializer.toJson(triangle)),
+        ).isEqualTo(
+            triangle,
+        )
+        assertThat(
+            serializer.fromBytes(serializer.toBytes(triangle)),
+        ).isEqualTo(
+            triangle,
+        )
+    }
+
+    @Test
+    fun `test generated enum - serialize and deserialize`() {
+        val status =
+            soiagen.enums.Status.createError(
+                code = 100,
+                message = "The Message",
+            )
+        val serializer = soiagen.enums.Status.SERIALIZER
+        assertThat(
+            serializer.toJsonCode(status),
+        ).isEqualTo(
+            "[4,[100,\"The Message\"]]",
+        )
+        assertThat(
+            serializer.fromJson(serializer.toJson(status)),
+        ).isEqualTo(
+            status,
+        )
+        assertThat(
+            serializer.fromBytes(serializer.toBytes(status)),
+        ).isEqualTo(
+            status,
+        )
+        assertThat(
+            serializer.fromBytes(serializer.toBytes(soiagen.enums.Status.OK)),
+        ).isEqualTo(
+            soiagen.enums.Status.OK,
+        )
+        assertThat(
+            serializer.fromBytes(serializer.toBytes(soiagen.enums.Status.UNKNOWN)),
+        ).isEqualTo(
+            soiagen.enums.Status.UNKNOWN,
+        )
+    }
+
+    @Test
+    fun `test generated struct - serialize and deserialize with unknown fields`() {
+        val fooAfter =
+            soiagen.schema_change.FooAfter(
+                bars = listOf(),
+                n = 3,
+                enums =
+                    listOf(
+                        soiagen.schema_change.EnumAfter.B,
+                    ),
+                bit = true,
+            )
+        val json = soiagen.schema_change.FooAfter.SERIALIZER.toJson(fooAfter)
+
+        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json, keepUnrecognizedFields = true)
+        val fooAfterFromUnrecognized =
+            soiagen.schema_change.FooAfter.SERIALIZER.fromJson(
+                soiagen.schema_change.FooBefore.SERIALIZER.toJson(fooBeforeWithUnrecognized),
+            )
+        assertThat(fooAfterFromUnrecognized).isEqualTo(fooAfter)
+
+        assertThat(
+            soiagen.schema_change.FooAfter.SERIALIZER.toJson(
+                soiagen.schema_change.FooAfter.SERIALIZER.fromJson(
+                    soiagen.schema_change.FooBefore.SERIALIZER.toJson(soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json)),
+                ),
+            ),
+        ).isEqualTo(
+            soiagen.schema_change.FooBefore.SERIALIZER.toJson(soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json)),
+        )
+    }
 }

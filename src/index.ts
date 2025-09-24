@@ -429,7 +429,7 @@ class KotlinSourceFileGenerator {
         `object ${constantName} : ${qualifiedName}() {\n`,
         `override val kind get() = ${kindExpr};\n\n`,
         "init {\n",
-        "maybeInitSerializer();\n",
+        "maybeFinalizeSerializer();\n",
         "}\n",
         `}\n\n`,  // object
       );
@@ -540,13 +540,13 @@ class KotlinSourceFileGenerator {
     for (const constField of constantFields) {
       this.push(toEnumConstantName(constField), ";\n");
     }
-    this.push("maybeInitSerializer();\n");
+    this.push("maybeFinalizeSerializer();\n");
     this.push(
       "}\n\n",  // init
-      `private var counter = ${constantFields.length + 1};\n\n`,
-      "private fun maybeInitSerializer() {\n",
-      "counter -= 1;\n",
-      "if (counter == 0) {\n");
+      `private var finalizationCounter = 0;\n\n`,
+      "private fun maybeFinalizeSerializer() {\n",
+      "finalizationCounter += 1;\n",
+      `if (finalizationCounter == ${constantFields.length + 1}) {\n`);
     for (const constField of constantFields) {
       this.push(
         "serializerImpl.addConstantField(\n",
@@ -579,7 +579,7 @@ class KotlinSourceFileGenerator {
     this.push(
       "serializerImpl.finalizeEnum();\n",
       "}\n",
-      "}\n", // maybeInitSerializer
+      "}\n", // maybeFinalizeSerializer
       "}\n\n", // companion object
     );
 
