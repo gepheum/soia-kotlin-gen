@@ -1,9 +1,9 @@
-// TODO: serialization, unknown fields
-
 package land.soia
 
 import com.google.common.truth.Truth.assertThat
+import land.soia.reflection.EnumConstantField
 import land.soia.reflection.EnumDescriptor
+import land.soia.reflection.EnumValueField
 import land.soia.reflection.ListDescriptor
 import land.soia.reflection.OptionalDescriptor
 import land.soia.reflection.PrimitiveDescriptor
@@ -665,6 +665,139 @@ class Tests {
             is Status.Unknown -> {}
             is Status.OK -> {}
             is Status.ErrorOption -> {}
+        }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `test generated enum - reflection`() {
+        val typeDescriptor: EnumDescriptor.Reflective<soiagen.enums.Status> =
+            soiagen.enums.Status.TYPE_DESCRIPTOR
+        assertThat(
+            typeDescriptor.name,
+        ).isEqualTo(
+            "Status",
+        )
+        assertThat(
+            typeDescriptor.qualifiedName,
+        ).isEqualTo(
+            "Status",
+        )
+        assertThat(
+            typeDescriptor.modulePath,
+        ).isEqualTo(
+            "enums.soia",
+        )
+        assertThat(
+            typeDescriptor.fields
+        ).hasSize(
+            3
+        )
+        assertThat(
+            typeDescriptor.removedNumbers
+        ).isEqualTo(
+            setOf(2, 3)
+        )
+        run {
+            val field = typeDescriptor.getField("error")!!
+            assertThat(
+                field,
+            ).isInstanceOf(
+                EnumValueField.Reflective::class.java,
+            )
+            field as EnumValueField.Reflective<soiagen.enums.Status, soiagen.enums.Status.Error>
+            assertThat(
+                field.name,
+            ).isEqualTo(
+                "error",
+            )
+            assertThat(
+                field.number,
+            ).isEqualTo(
+                4,
+            )
+            assertThat(
+                field.test(
+                    soiagen.enums.Status.createError(
+                        code = 100,
+                        message = "The Message",
+                    ),
+                )
+            ).isTrue()
+            assertThat(
+                field.test(
+                    soiagen.enums.Status.OK,
+                ),
+            ).isFalse()
+            assertThat(
+                field.get(
+                    soiagen.enums.Status.createError(
+                        code = 100,
+                        message = "The Message",
+                    )
+                ),
+            ).isEqualTo(
+                soiagen.enums.Status.Error(
+                    code = 100,
+                    message = "The Message",
+                )
+            )
+            assertThat(
+                field.wrap(
+                    soiagen.enums.Status.Error(
+                        code = 100,
+                        message = "The Message",
+                    ),
+                )
+            ).isEqualTo(
+                soiagen.enums.Status.createError(
+                    code = 100,
+                    message = "The Message",
+                )
+            )
+        }
+        run {
+            val field = typeDescriptor.getField("OK")!!
+            assertThat(
+                field,
+            ).isInstanceOf(
+                EnumConstantField.Reflective::class.java,
+            )
+            field as EnumConstantField.Reflective<soiagen.enums.Status>
+            assertThat(
+                field.name,
+            ).isEqualTo(
+                "OK",
+            )
+            assertThat(
+                field.number,
+            ).isEqualTo(
+                1,
+            )
+            assertThat(
+                field.constant
+            ).isEqualTo(
+                soiagen.enums.Status.OK
+            )
+        }
+        run {
+            val field = typeDescriptor.getField(0)!!
+            assertThat(
+                field.name,
+            ).isEqualTo(
+                "?",
+            )
+            assertThat(
+                field.number,
+            ).isEqualTo(
+                0,
+            )
+            field as EnumConstantField.Reflective<soiagen.enums.Status>
+            assertThat(
+                field.constant
+            ).isEqualTo(
+                soiagen.enums.Status.UNKNOWN
+            )
         }
     }
 

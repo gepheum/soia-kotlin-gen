@@ -1,3 +1,5 @@
+// TODO: test constant field and unknown field;
+// TODO: make sure EnumField.Reflective has name and number fields...;
 // TODO: add unit tests on generated classes
 //   TODO: include reflection
 // TODO: deploy typescript library
