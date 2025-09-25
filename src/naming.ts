@@ -7,7 +7,7 @@ export class Namer {
     if (packagePrefix.length <= 0) {
       this.genPackageFirstName = "soiagen";
     } else {
-      this.genPackageFirstName = packagePrefix.split(".")[0]!!;
+      this.genPackageFirstName = packagePrefix.split(".")[0]!;
     }
   }
 
