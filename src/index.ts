@@ -1,8 +1,6 @@
 // TODO: kotlin linter in generator presubmit?
 // TODO: deploy typescript library
 // TODO: service client and service impl
-import { Namer, toEnumConstantName } from "./naming.js";
-import { TypeSpeller } from "./type_speller.js";
 import {
   type CodeGenerator,
   type Constant,
@@ -16,6 +14,8 @@ import {
   simpleHash,
 } from "soiac";
 import { z } from "zod";
+import { Namer, toEnumConstantName } from "./naming.js";
+import { TypeSpeller } from "./type_speller.js";
 
 const Config = z.object({
   packagePrefix: z
@@ -62,7 +62,8 @@ class KotlinSourceFileGenerator {
 
   generate(): string {
     // http://patorjk.com/software/taag/#f=Doom&t=Do%20not%20edit
-    this.push(`@file:Suppress("ktlint")
+    this.push(
+      `@file:Suppress("ktlint")
 
       //  ______                        _               _  _  _
       //  |  _  \\                      | |             | |(_)| |
@@ -431,7 +432,7 @@ class KotlinSourceFileGenerator {
         "init {\n",
         "maybeFinalizeSerializer();\n",
         "}\n",
-        `}\n\n`,  // object
+        `}\n\n`, // object
       );
     }
     for (const valueField of valueFields) {
@@ -542,11 +543,12 @@ class KotlinSourceFileGenerator {
     }
     this.push("maybeFinalizeSerializer();\n");
     this.push(
-      "}\n\n",  // init
+      "}\n\n", // init
       `private var finalizationCounter = 0;\n\n`,
       "private fun maybeFinalizeSerializer() {\n",
       "finalizationCounter += 1;\n",
-      `if (finalizationCounter == ${constantFields.length + 1}) {\n`);
+      `if (finalizationCounter == ${constantFields.length + 1}) {\n`,
+    );
     for (const constField of constantFields) {
       this.push(
         "serializerImpl.addConstantField(\n",

@@ -1,5 +1,4 @@
-import { Field, convertCase } from "soiac";
-import { RecordLocation } from "soiac";
+import { Field, RecordLocation, convertCase } from "soiac";
 
 export class Namer {
   private readonly genPackageFirstName: string;

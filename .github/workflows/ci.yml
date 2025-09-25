@@ -12,17 +12,14 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
-        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
       - run: npm ci
       - run: npm run build
       - run: npm run format:check

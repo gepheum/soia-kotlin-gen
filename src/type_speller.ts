@@ -1,5 +1,5 @@
-import { ClassName, Namer } from "./naming.js";
 import type { RecordKey, RecordLocation, ResolvedType } from "soiac";
+import { ClassName, Namer } from "./naming.js";
 
 export type TypeFlavor =
   | "initializer"

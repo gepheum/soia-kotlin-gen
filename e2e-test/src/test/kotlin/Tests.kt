@@ -689,14 +689,14 @@ class Tests {
             "enums.soia",
         )
         assertThat(
-            typeDescriptor.fields
+            typeDescriptor.fields,
         ).hasSize(
-            3
+            3,
         )
         assertThat(
-            typeDescriptor.removedNumbers
+            typeDescriptor.removedNumbers,
         ).isEqualTo(
-            setOf(2, 3)
+            setOf(2, 3),
         )
         run {
             val field = typeDescriptor.getField("error")!!
@@ -722,7 +722,7 @@ class Tests {
                         code = 100,
                         message = "The Message",
                     ),
-                )
+                ),
             ).isTrue()
             assertThat(
                 field.test(
@@ -734,13 +734,13 @@ class Tests {
                     soiagen.enums.Status.createError(
                         code = 100,
                         message = "The Message",
-                    )
+                    ),
                 ),
             ).isEqualTo(
                 soiagen.enums.Status.Error(
                     code = 100,
                     message = "The Message",
-                )
+                ),
             )
             assertThat(
                 field.wrap(
@@ -748,22 +748,22 @@ class Tests {
                         code = 100,
                         message = "The Message",
                     ),
-                )
+                ),
             ).isEqualTo(
                 soiagen.enums.Status.createError(
                     code = 100,
                     message = "The Message",
-                )
+                ),
             )
             assertThat(
                 typeDescriptor.getField(
                     soiagen.enums.Status.createError(
                         code = 100,
                         message = "The Message",
-                    )
-                )
+                    ),
+                ),
             ).isEqualTo(
-                field
+                field,
             )
         }
         run {
@@ -785,16 +785,16 @@ class Tests {
                 1,
             )
             assertThat(
-                field.constant
+                field.constant,
             ).isEqualTo(
-                soiagen.enums.Status.OK
+                soiagen.enums.Status.OK,
             )
             assertThat(
                 typeDescriptor.getField(
-                    soiagen.enums.Status.OK
-                )
+                    soiagen.enums.Status.OK,
+                ),
             ).isEqualTo(
-                field
+                field,
             )
         }
         run {
@@ -811,16 +811,16 @@ class Tests {
             )
             field as EnumConstantField.Reflective<soiagen.enums.Status>
             assertThat(
-                field.constant
+                field.constant,
             ).isEqualTo(
-                soiagen.enums.Status.UNKNOWN
+                soiagen.enums.Status.UNKNOWN,
             )
             assertThat(
                 typeDescriptor.getField(
-                    soiagen.enums.Status.UNKNOWN
-                )
+                    soiagen.enums.Status.UNKNOWN,
+                ),
             ).isEqualTo(
-                field
+                field,
             )
         }
     }
