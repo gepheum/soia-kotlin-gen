@@ -755,6 +755,16 @@ class Tests {
                     message = "The Message",
                 )
             )
+            assertThat(
+                typeDescriptor.getField(
+                    soiagen.enums.Status.createError(
+                        code = 100,
+                        message = "The Message",
+                    )
+                )
+            ).isEqualTo(
+                field
+            )
         }
         run {
             val field = typeDescriptor.getField("OK")!!
@@ -779,6 +789,13 @@ class Tests {
             ).isEqualTo(
                 soiagen.enums.Status.OK
             )
+            assertThat(
+                typeDescriptor.getField(
+                    soiagen.enums.Status.OK
+                )
+            ).isEqualTo(
+                field
+            )
         }
         run {
             val field = typeDescriptor.getField(0)!!
@@ -797,6 +814,13 @@ class Tests {
                 field.constant
             ).isEqualTo(
                 soiagen.enums.Status.UNKNOWN
+            )
+            assertThat(
+                typeDescriptor.getField(
+                    soiagen.enums.Status.UNKNOWN
+                )
+            ).isEqualTo(
+                field
             )
         }
     }
