@@ -43,8 +43,9 @@ enum Kind {
     kind: bool;
   }
   kind: Kind;
-  struct WrapKind {}
-  wrap_kind: WrapKind;
+  struct WrapOption {}
+  wrap_option: WrapOption;
+  create_option: WrapOption;
 }
 
 enum Status {

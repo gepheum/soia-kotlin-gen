@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     implementation("com.squareup.okio:okio:3.6.0")
-    implementation("land.soia:soia-kotlin-client:1.0.18")
+    implementation("land.soia:soia-kotlin-client:latest.release")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")

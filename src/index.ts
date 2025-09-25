@@ -1,10 +1,6 @@
-// TODO: test constant field and unknown field;
-// TODO: make sure EnumField.Reflective has name and number fields...;
-// TODO: add unit tests on generated classes
-//   TODO: include reflection
+// TODO: kotlin linter in generator presubmit?
 // TODO: deploy typescript library
 // TODO: service client and service impl
-// TODO: kotlin linter?
 import { Namer, toEnumConstantName } from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
 import {
@@ -66,7 +62,9 @@ class KotlinSourceFileGenerator {
 
   generate(): string {
     // http://patorjk.com/software/taag/#f=Doom&t=Do%20not%20edit
-    this.push(`//  ______                        _               _  _  _
+    this.push(`@file:Suppress("ktlint")
+
+      //  ______                        _               _  _  _
       //  |  _  \\                      | |             | |(_)| |
       //  | | | |  ___    _ __    ___  | |_    ___   __| | _ | |_
       //  | | | | / _ \\  | '_ \\  / _ \\ | __|  / _ \\ / _\` || || __|
@@ -74,11 +72,11 @@ class KotlinSourceFileGenerator {
       //  |___/   \\___/  |_| |_| \\___/  \\__|  \\___| \\__,_||_| \\__|
       //
 
-      @file:Suppress("ktlint")
+      // To install the Soia client library, add:
+      //   implementation("land.soia:soia-kotlin-client:latest.release")
+      // to your build.gradle.kts file
 
-      `);
-
-    this.push(
+      `,
       `package ${this.packagePrefix}soiagen.`,
       this.inModule.path.replace(/\.soia$/, "").replace("/", "."),
       ";\n\n",
