@@ -12,7 +12,7 @@ import land.soia.reflection.StructDescriptor
 import land.soia.reflection.asJsonCode
 import land.soia.reflection.parseTypeDescriptor
 import org.junit.jupiter.api.Test
-import soiagen.enums.Status
+import java.net.http.HttpHeaders
 import java.time.Instant
 
 class Tests {
@@ -660,11 +660,11 @@ class Tests {
         )
     }
 
-    fun `test generated enum - condition on enum`(status: Status) {
+    fun `test generated enum - condition on enum`(status: soiagen.enums.Status) {
         when (status) {
-            is Status.Unknown -> {}
-            is Status.OK -> {}
-            is Status.ErrorOption -> {}
+            is soiagen.enums.Status.Unknown -> {}
+            is soiagen.enums.Status.OK -> {}
+            is soiagen.enums.Status.ErrorOption -> {}
         }
     }
 
@@ -923,5 +923,62 @@ class Tests {
         ).isEqualTo(
             soiagen.schema_change.FooBefore.SERIALIZER.toJson(soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json)),
         )
+    }
+
+    @Test
+    fun `test generated constant`() {
+        assertThat(
+            soiagen.constants.ONE_SINGLE_QUOTED_STRING,
+        ).isEqualTo(
+            "\"Foo\"",
+        )
+        assertThat(
+            soiagen.constants.ONE_CONSTANT,
+        ).isEqualTo(
+            soiagen.enums.JsonValue.ArrayOption(
+                listOf(
+                    soiagen.enums.JsonValue.BooleanOption(
+                        true,
+                    ),
+                    soiagen.enums.JsonValue.NumberOption(
+                        3.14,
+                    ),
+                    soiagen.enums.JsonValue.StringOption(
+                        "\n" +
+                            "        foo\n" +
+                            "        bar",
+                    ),
+                    soiagen.enums.JsonValue.ObjectOption(
+                        listOf(
+                            soiagen.enums.JsonValue.Pair(
+                                name = "foo",
+                                value = soiagen.enums.JsonValue.NULL,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `test generated methods`() {
+        assertThat(
+            soiagen.methods.WithExplicitNumber.number,
+        ).isEqualTo(
+            3,
+        )
+    }
+}
+
+class ServiceImpl {
+    private fun myProcedure(point: soiagen.structs.Point, requestHeaders: HttpHeaders): soiagen.enums.JsonValue {
+        return soiagen.enums.JsonValue.StringOption("FOO x:${point.x}")
+    }
+
+    val service by lazy {
+        Service.builder()
+            .addMethod(soiagen.methods.MyProcedure) { req, reqMeta -> myProcedure(req, reqMeta) }
+            .build()
     }
 }

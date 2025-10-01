@@ -1,6 +1,6 @@
-// TODO: kotlin linter in generator presubmit?
 // TODO: deploy typescript library
-// TODO: service client and service impl
+// TODO: add @SuppressWarning for parameter types
+
 import {
   type CodeGenerator,
   type Constant,
