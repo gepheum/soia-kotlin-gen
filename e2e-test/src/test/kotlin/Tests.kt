@@ -972,7 +972,10 @@ class Tests {
 }
 
 class ServiceImpl {
-    private fun myProcedure(point: soiagen.structs.Point, requestHeaders: HttpHeaders): soiagen.enums.JsonValue {
+    private fun myProcedure(
+        point: soiagen.structs.Point,
+        requestHeaders: HttpHeaders,
+    ): soiagen.enums.JsonValue {
         return soiagen.enums.JsonValue.StringOption("FOO x:${point.x}")
     }
 
