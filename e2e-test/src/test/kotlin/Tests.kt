@@ -297,41 +297,41 @@ class Tests {
     @Test
     fun `test generated struct - reflection`() {
         assertThat(
-            soiagen.structs.Item.User.TYPE_DESCRIPTOR.name,
+            soiagen.structs.Item.User.typeDescriptor.name,
         ).isEqualTo(
             "User",
         )
         assertThat(
-            soiagen.structs.Item.User.TYPE_DESCRIPTOR.qualifiedName,
+            soiagen.structs.Item.User.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item.User",
         )
         assertThat(
-            soiagen.structs.Item.TYPE_DESCRIPTOR.name,
+            soiagen.structs.Item.typeDescriptor.name,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.structs.Item.TYPE_DESCRIPTOR.qualifiedName,
+            soiagen.structs.Item.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.vehicles.car.Car.TYPE_DESCRIPTOR.modulePath,
+            soiagen.vehicles.car.Car.typeDescriptor.modulePath,
         ).isEqualTo(
             "vehicles/car.soia",
         )
 
         assertThat(
-            soiagen.structs.Color.TYPE_DESCRIPTOR.removedNumbers,
+            soiagen.structs.Color.typeDescriptor.removedNumbers,
         ).isEmpty()
         assertThat(
-            soiagen.structs.FullName.TYPE_DESCRIPTOR.removedNumbers,
+            soiagen.structs.FullName.typeDescriptor.removedNumbers,
         ).isEqualTo(
             setOf(1),
         )
 
-        val typeDescriptor = soiagen.vehicles.car.Car.TYPE_DESCRIPTOR
+        val typeDescriptor = soiagen.vehicles.car.Car.typeDescriptor
         assertThat(
             typeDescriptor.fields,
         ).hasSize(4)
@@ -672,7 +672,7 @@ class Tests {
     @Suppress("UNCHECKED_CAST")
     fun `test generated enum - reflection`() {
         val typeDescriptor: EnumDescriptor.Reflective<soiagen.enums.Status> =
-            soiagen.enums.Status.TYPE_DESCRIPTOR
+            soiagen.enums.Status.typeDescriptor
         assertThat(
             typeDescriptor.name,
         ).isEqualTo(
@@ -840,7 +840,7 @@ class Tests {
                         soiagen.structs.Point.Mutable(x = 1, y = 2),
                     ),
             )
-        val serializer = soiagen.structs.Triangle.SERIALIZER
+        val serializer = soiagen.structs.Triangle.serializer
         assertThat(
             serializer.toJsonCode(triangle),
         ).isEqualTo(
@@ -865,7 +865,7 @@ class Tests {
                 code = 100,
                 message = "The Message",
             )
-        val serializer = soiagen.enums.Status.SERIALIZER
+        val serializer = soiagen.enums.Status.serializer
         assertThat(
             serializer.toJsonCode(status),
         ).isEqualTo(
@@ -905,23 +905,23 @@ class Tests {
                     ),
                 bit = true,
             )
-        val json = soiagen.schema_change.FooAfter.SERIALIZER.toJson(fooAfter)
+        val json = soiagen.schema_change.FooAfter.serializer.toJson(fooAfter)
 
-        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json, keepUnrecognizedFields = true)
+        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.serializer.fromJson(json, keepUnrecognizedFields = true)
         val fooAfterFromUnrecognized =
-            soiagen.schema_change.FooAfter.SERIALIZER.fromJson(
-                soiagen.schema_change.FooBefore.SERIALIZER.toJson(fooBeforeWithUnrecognized),
+            soiagen.schema_change.FooAfter.serializer.fromJson(
+                soiagen.schema_change.FooBefore.serializer.toJson(fooBeforeWithUnrecognized),
             )
         assertThat(fooAfterFromUnrecognized).isEqualTo(fooAfter)
 
         assertThat(
-            soiagen.schema_change.FooAfter.SERIALIZER.toJson(
-                soiagen.schema_change.FooAfter.SERIALIZER.fromJson(
-                    soiagen.schema_change.FooBefore.SERIALIZER.toJson(soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json)),
+            soiagen.schema_change.FooAfter.serializer.toJson(
+                soiagen.schema_change.FooAfter.serializer.fromJson(
+                    soiagen.schema_change.FooBefore.serializer.toJson(soiagen.schema_change.FooBefore.serializer.fromJson(json)),
                 ),
             ),
         ).isEqualTo(
-            soiagen.schema_change.FooBefore.SERIALIZER.toJson(soiagen.schema_change.FooBefore.SERIALIZER.fromJson(json)),
+            soiagen.schema_change.FooBefore.serializer.toJson(soiagen.schema_change.FooBefore.serializer.fromJson(json)),
         )
     }
 

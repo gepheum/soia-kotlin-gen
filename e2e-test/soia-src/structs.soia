@@ -103,6 +103,11 @@ struct NameCollision {
 
   this: string;
   other: string;
+  serializer: bool;
+  type_descriptor: bool;
+  hash_code: bool;
+  equals: bool;
+  to_string: bool;
 }
 
 struct RecA {

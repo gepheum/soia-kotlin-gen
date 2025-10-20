@@ -11,15 +11,17 @@ export class Namer {
     }
   }
 
-  toLowerCamelName(field: Field | string): string {
-    const inputName = typeof field === "string" ? field : field.name.text;
+  structFieldToKotlinName(field: Field | string): string {
+    const soiaName = typeof field === "string" ? field : field.name.text;
+    const lowerCamel = convertCase(soiaName, "lower_underscore", "lowerCamel");
     const nameConflict =
-      KOTLIN_HARD_KEYWORDS.has(inputName) ||
-      TOP_LEVEL_PACKAGE_NAMES.has(inputName) ||
-      inputName === this.genPackageFirstName;
-    return nameConflict
-      ? inputName + "_"
-      : convertCase(inputName, "lower_underscore", "lowerCamel");
+      KOTLIN_HARD_KEYWORDS.has(lowerCamel) ||
+      TOP_LEVEL_PACKAGE_NAMES.has(lowerCamel) ||
+      KOTLIN_OBJECT_SYMBOLS.has(lowerCamel) ||
+      GENERATED_STRUCT_SYMBOLS.has(lowerCamel) ||
+      lowerCamel === this.genPackageFirstName ||
+      soiaName.startsWith("mutable_");
+    return nameConflict ? lowerCamel + "_" : lowerCamel;
   }
 
   /** Returns the name of the frozen Kotlin class for the given record. */
@@ -104,6 +106,19 @@ const TOP_LEVEL_PACKAGE_NAMES: ReadonlySet<string> = new Set<string>([
   "java",
   "kotlin",
   "okio",
+]);
+
+const KOTLIN_OBJECT_SYMBOLS: ReadonlySet<string> = new Set([
+  "equals",
+  "hashCode",
+  "toString",
+  "javaClass",
+]);
+
+const GENERATED_STRUCT_SYMBOLS: ReadonlySet<string> = new Set([
+  "copy",
+  "toFrozen",
+  "toMutable",
 ]);
 
 export function toEnumConstantName(field: Field): string {

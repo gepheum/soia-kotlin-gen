@@ -13,8 +13,8 @@ export type TypeFlavor =
  *
  * The flavors are:
  *   · initializer
- *       The value can be passed by parameter to the `create` method of a frozen
- *       class or the constructor of a mutable class.
+ *       The value can be passed by parameter to the constructor of a frozen
+ *       class.
  *   · frozen:
  *       The type is deeply immutable. All the fields of a frozen class are also
  *       frozen.
@@ -195,7 +195,7 @@ export class TypeSpeller {
         if (type.key) {
           const keyChain = type.key.path.join(".");
           const path = type.key.path
-            .map((f) => this.namer.toLowerCamelName(f.name.text))
+            .map((f) => this.namer.structFieldToKotlinName(f.name.text))
             .join(".");
           return (
             "land.soia.internal.keyedListSerializer(\n" +
@@ -218,7 +218,7 @@ export class TypeSpeller {
         );
       }
       case "record": {
-        return this.getClassName(type.key).qualifiedName + ".SERIALIZER";
+        return this.getClassName(type.key).qualifiedName + ".serializer";
       }
     }
   }
