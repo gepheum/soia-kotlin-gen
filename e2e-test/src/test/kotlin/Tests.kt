@@ -297,41 +297,41 @@ class Tests {
     @Test
     fun `test generated struct - reflection`() {
         assertThat(
-            soiagen.structs.Item.User.typeDescriptor.name,
+            soiagen.structs.Item.User.TypeDescriptor.name,
         ).isEqualTo(
             "User",
         )
         assertThat(
-            soiagen.structs.Item.User.typeDescriptor.qualifiedName,
+            soiagen.structs.Item.User.TypeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item.User",
         )
         assertThat(
-            soiagen.structs.Item.typeDescriptor.name,
+            soiagen.structs.Item.TypeDescriptor.name,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.structs.Item.typeDescriptor.qualifiedName,
+            soiagen.structs.Item.TypeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.vehicles.car.Car.typeDescriptor.modulePath,
+            soiagen.vehicles.car.Car.TypeDescriptor.modulePath,
         ).isEqualTo(
             "vehicles/car.soia",
         )
 
         assertThat(
-            soiagen.structs.Color.typeDescriptor.removedNumbers,
+            soiagen.structs.Color.TypeDescriptor.removedNumbers,
         ).isEmpty()
         assertThat(
-            soiagen.structs.FullName.typeDescriptor.removedNumbers,
+            soiagen.structs.FullName.TypeDescriptor.removedNumbers,
         ).isEqualTo(
             setOf(1),
         )
 
-        val typeDescriptor = soiagen.vehicles.car.Car.typeDescriptor
+        val typeDescriptor = soiagen.vehicles.car.Car.TypeDescriptor
         assertThat(
             typeDescriptor.fields,
         ).hasSize(4)
@@ -541,7 +541,7 @@ class Tests {
             soiagen.enums.Status::class.java,
         )
         assertThat(
-            soiagen.enums.Status.ErrorOption(
+            soiagen.enums.Status.ErrorWrapper(
                 soiagen.enums.Status.Error(
                     code = 100,
                     message = "The Message",
@@ -573,14 +573,14 @@ class Tests {
             "Status.OK",
         )
         assertThat(
-            soiagen.enums.Status.ErrorOption(
+            soiagen.enums.Status.ErrorWrapper(
                 soiagen.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
             ).toString(),
         ).isEqualTo(
-            "Status.ErrorOption(\n" +
+            "Status.ErrorWrapper(\n" +
                 "  Status.Error(\n" +
                 "    code = 100,\n" +
                 "    message = \"The Message\",\n" +
@@ -593,7 +593,7 @@ class Tests {
                 message = "The Message",
             ).toString(),
         ).isEqualTo(
-            "Status.ErrorOption(\n" +
+            "Status.ErrorWrapper(\n" +
                 "  Status.Error(\n" +
                 "    code = 100,\n" +
                 "    message = \"The Message\",\n" +
@@ -615,7 +615,7 @@ class Tests {
         set.add(soiagen.enums.Status.UNKNOWN)
         set.add(soiagen.enums.Status.UNKNOWN)
         set.add(
-            soiagen.enums.Status.ErrorOption(
+            soiagen.enums.Status.ErrorWrapper(
                 soiagen.enums.Status.Error(
                     code = 100,
                     message = "The Message",
@@ -623,7 +623,7 @@ class Tests {
             ),
         )
         set.add(
-            soiagen.enums.Status.ErrorOption(
+            soiagen.enums.Status.ErrorWrapper(
                 soiagen.enums.Status.Error(
                     code = 100,
                     message = "The Message",
@@ -631,7 +631,7 @@ class Tests {
             ),
         )
         set.add(
-            soiagen.enums.Status.ErrorOption(
+            soiagen.enums.Status.ErrorWrapper(
                 soiagen.enums.Status.Error(
                     code = 101,
                     message = "The Other Message",
@@ -644,13 +644,13 @@ class Tests {
             setOf(
                 soiagen.enums.Status.OK,
                 soiagen.enums.Status.UNKNOWN,
-                soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.ErrorWrapper(
                     soiagen.enums.Status.Error(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
-                soiagen.enums.Status.ErrorOption(
+                soiagen.enums.Status.ErrorWrapper(
                     soiagen.enums.Status.Error(
                         code = 101,
                         message = "The Other Message",
@@ -664,7 +664,7 @@ class Tests {
         when (status) {
             is soiagen.enums.Status.Unknown -> {}
             is soiagen.enums.Status.OK -> {}
-            is soiagen.enums.Status.ErrorOption -> {}
+            is soiagen.enums.Status.ErrorWrapper -> {}
         }
     }
 
@@ -672,7 +672,7 @@ class Tests {
     @Suppress("UNCHECKED_CAST")
     fun `test generated enum - reflection`() {
         val typeDescriptor: EnumDescriptor.Reflective<soiagen.enums.Status> =
-            soiagen.enums.Status.typeDescriptor
+            soiagen.enums.Status.TypeDescriptor
         assertThat(
             typeDescriptor.name,
         ).isEqualTo(
@@ -840,7 +840,7 @@ class Tests {
                         soiagen.structs.Point.Mutable(x = 1, y = 2),
                     ),
             )
-        val serializer = soiagen.structs.Triangle.serializer
+        val serializer = soiagen.structs.Triangle.Serializer
         assertThat(
             serializer.toJsonCode(triangle),
         ).isEqualTo(
@@ -865,7 +865,7 @@ class Tests {
                 code = 100,
                 message = "The Message",
             )
-        val serializer = soiagen.enums.Status.serializer
+        val serializer = soiagen.enums.Status.Serializer
         assertThat(
             serializer.toJsonCode(status),
         ).isEqualTo(
@@ -905,23 +905,23 @@ class Tests {
                     ),
                 bit = true,
             )
-        val json = soiagen.schema_change.FooAfter.serializer.toJson(fooAfter)
+        val json = soiagen.schema_change.FooAfter.Serializer.toJson(fooAfter)
 
-        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.serializer.fromJson(json, keepUnrecognizedFields = true)
+        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.Serializer.fromJson(json, keepUnrecognizedFields = true)
         val fooAfterFromUnrecognized =
-            soiagen.schema_change.FooAfter.serializer.fromJson(
-                soiagen.schema_change.FooBefore.serializer.toJson(fooBeforeWithUnrecognized),
+            soiagen.schema_change.FooAfter.Serializer.fromJson(
+                soiagen.schema_change.FooBefore.Serializer.toJson(fooBeforeWithUnrecognized),
             )
         assertThat(fooAfterFromUnrecognized).isEqualTo(fooAfter)
 
         assertThat(
-            soiagen.schema_change.FooAfter.serializer.toJson(
-                soiagen.schema_change.FooAfter.serializer.fromJson(
-                    soiagen.schema_change.FooBefore.serializer.toJson(soiagen.schema_change.FooBefore.serializer.fromJson(json)),
+            soiagen.schema_change.FooAfter.Serializer.toJson(
+                soiagen.schema_change.FooAfter.Serializer.fromJson(
+                    soiagen.schema_change.FooBefore.Serializer.toJson(soiagen.schema_change.FooBefore.Serializer.fromJson(json)),
                 ),
             ),
         ).isEqualTo(
-            soiagen.schema_change.FooBefore.serializer.toJson(soiagen.schema_change.FooBefore.serializer.fromJson(json)),
+            soiagen.schema_change.FooBefore.Serializer.toJson(soiagen.schema_change.FooBefore.Serializer.fromJson(json)),
         )
     }
 
@@ -935,20 +935,20 @@ class Tests {
         assertThat(
             soiagen.constants.ONE_CONSTANT,
         ).isEqualTo(
-            soiagen.enums.JsonValue.ArrayOption(
+            soiagen.enums.JsonValue.ArrayWrapper(
                 listOf(
-                    soiagen.enums.JsonValue.BooleanOption(
+                    soiagen.enums.JsonValue.BooleanWrapper(
                         true,
                     ),
-                    soiagen.enums.JsonValue.NumberOption(
+                    soiagen.enums.JsonValue.NumberWrapper(
                         3.14,
                     ),
-                    soiagen.enums.JsonValue.StringOption(
+                    soiagen.enums.JsonValue.StringWrapper(
                         "\n" +
                             "        foo\n" +
                             "        bar",
                     ),
-                    soiagen.enums.JsonValue.ObjectOption(
+                    soiagen.enums.JsonValue.ObjectWrapper(
                         listOf(
                             soiagen.enums.JsonValue.Pair(
                                 name = "foo",
@@ -976,7 +976,7 @@ class ServiceImpl {
         point: soiagen.structs.Point,
         requestHeaders: HttpHeaders,
     ): soiagen.enums.JsonValue {
-        return soiagen.enums.JsonValue.StringOption("FOO x:${point.x}")
+        return soiagen.enums.JsonValue.StringWrapper("FOO x:${point.x}")
     }
 
     val service by lazy {

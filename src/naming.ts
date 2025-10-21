@@ -35,7 +35,9 @@ export class Namer {
       if (
         (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
         (parentType === "enum" &&
-          (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name)))
+          (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name))) ||
+        name === "Serializer" ||
+        name === "TypeDescriptor"
       ) {
         name += "_";
       }
@@ -122,9 +124,7 @@ const GENERATED_STRUCT_SYMBOLS: ReadonlySet<string> = new Set([
 ]);
 
 export function toEnumConstantName(field: Field): string {
-  return RECORD_GENERATED_CONSTANT_NAMES.has(field.name.text)
-    ? field.name.text + "_"
-    : field.name.text;
+  return field.name.text;
 }
 
 export interface ClassName {
@@ -144,9 +144,4 @@ const STRUCT_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set(["Mutable"]);
 const ENUM_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set([
   "Kind",
   "Unknown",
-]);
-
-const RECORD_GENERATED_CONSTANT_NAMES: ReadonlySet<string> = new Set([
-  "SERIALIZER",
-  "TYPE_DESCRIPTOR",
 ]);

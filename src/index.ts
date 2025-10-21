@@ -311,8 +311,8 @@ class KotlinSourceFileGenerator {
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
       ");\n\n",
-      "val serializer = land.soia.internal.makeSerializer(serializerImpl);\n\n",
-      "val typeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
+      "val Serializer = land.soia.internal.makeSerializer(serializerImpl);\n\n",
+      "val TypeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const field of fields) {
@@ -404,14 +404,18 @@ class KotlinSourceFileGenerator {
     const valueFields = fields.filter((f) => f.type);
     const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
-    this.push(`sealed class ${className.name} private constructor() {\n`);
-    this.push(`enum class Kind {\n`, `CONST_UNKNOWN,\n`);
+    this.push(
+      `sealed class ${className.name} private constructor() {\n`,
+      "enum class Kind {\n", //
+      "UNKNOWN,\n",
+    );
     for (const field of constantFields) {
-      this.push(`CONST_${field.name.text},\n`);
+      this.push(`${field.name.text}_CONST,\n`);
     }
     for (const field of valueFields) {
       this.push(
-        `VAL_${convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE")},\n`,
+        convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE"),
+        "_WRAPPER,\n",
       );
     }
     this.push(
@@ -421,7 +425,7 @@ class KotlinSourceFileGenerator {
       '.UNKNOWN")) internal constructor(\n',
       `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
-      "override val kind get() = Kind.CONST_UNKNOWN;\n\n",
+      "override val kind get() = Kind.UNKNOWN;\n\n",
       "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
       "return other is Unknown;\n",
       "}\n\n",
@@ -431,7 +435,7 @@ class KotlinSourceFileGenerator {
       "}\n\n", // class Unknown
     );
     for (const constField of constantFields) {
-      const kindExpr = `Kind.CONST_${constField.name.text}`;
+      const kindExpr = `Kind.${constField.name.text}_CONST`;
       const constantName = toEnumConstantName(constField);
       this.push(
         `object ${constantName} : ${qualifiedName}() {\n`,
@@ -444,9 +448,9 @@ class KotlinSourceFileGenerator {
     }
     for (const valueField of valueFields) {
       const valueType = valueField.type!;
-      const optionClassName =
+      const wrapperClassName =
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
-        "Option";
+        "Wrapper";
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
         .toString();
@@ -456,13 +460,13 @@ class KotlinSourceFileGenerator {
       this.pushEol();
       if (initializerType === frozenType) {
         this.push(
-          `class ${optionClassName}(\n`,
+          `class ${wrapperClassName}(\n`,
           `val value: ${initializerType},\n`,
           `) : ${qualifiedName}() {\n`,
         );
       } else {
         this.push(
-          `class ${optionClassName} private constructor (\n`,
+          `class ${wrapperClassName} private constructor (\n`,
           `val value: ${frozenType},\n`,
           `) : ${qualifiedName}() {\n`,
           "constructor(\n",
@@ -470,11 +474,18 @@ class KotlinSourceFileGenerator {
           `): this(${this.toFrozenExpression("value", valueType)}) {}\n\n`,
         );
       }
-      const kindExpr = `Kind.VAL_${convertCase(valueField.name.text, "lower_underscore", "UPPER_UNDERSCORE")}`;
+      const kindExpr =
+        "Kind." +
+        convertCase(
+          valueField.name.text,
+          "lower_underscore",
+          "UPPER_UNDERSCORE",
+        ) +
+        "_WRAPPER";
       this.push(
         `override val kind get() = ${kindExpr};\n\n`,
         "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
-        `return other is ${qualifiedName}.${optionClassName} && value == other.value;\n`,
+        `return other is ${qualifiedName}.${wrapperClassName} && value == other.value;\n`,
         "}\n\n",
         "override fun hashCode(): kotlin.Int {\n",
         "return this.value.hashCode() + ",
@@ -510,9 +521,9 @@ class KotlinSourceFileGenerator {
       const createFunName =
         "create" +
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
-      const optionClassName =
+      const wrapperClassName =
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
-        "Option";
+        "Wrapper";
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
         `fun ${createFunName}(\n`,
@@ -524,7 +535,7 @@ class KotlinSourceFileGenerator {
         this.push(`${fieldName}: ${type},\n`);
       }
       this.push(
-        `) = ${optionClassName}(\n`,
+        `) = ${wrapperClassName}(\n`,
         `${structClassName.qualifiedName}(\n`,
       );
       for (const field of struct.fields) {
@@ -541,8 +552,8 @@ class KotlinSourceFileGenerator {
       'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
       ";\n\n",
-      "val serializer = land.soia.internal.makeSerializer(_serializerImpl);\n\n",
-      "val typeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
+      "val Serializer = land.soia.internal.makeSerializer(_serializerImpl);\n\n",
+      "val TypeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const constField of constantFields) {
@@ -569,16 +580,16 @@ class KotlinSourceFileGenerator {
       const serializerExpression = typeSpeller.getSerializerExpression(
         valueField.type!,
       );
-      const optionClassName =
+      const wrapperClassName =
         convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
-        "Option";
+        "Wrapper";
       this.push(
         "_serializerImpl.addValueField(\n",
         `${valueField.number},\n`,
         `"${valueField.name.text}",\n`,
-        `${optionClassName}::class.java,\n`,
+        `${wrapperClassName}::class.java,\n`,
         `${serializerExpression},\n`,
-        `{ ${optionClassName}(it) },\n`,
+        `{ ${wrapperClassName}(it) },\n`,
         ") { it.value };\n",
       );
     }

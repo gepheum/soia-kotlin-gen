@@ -218,7 +218,7 @@ export class TypeSpeller {
         );
       }
       case "record": {
-        return this.getClassName(type.key).qualifiedName + ".serializer";
+        return this.getClassName(type.key).qualifiedName + ".Serializer";
       }
     }
   }
