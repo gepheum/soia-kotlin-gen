@@ -643,19 +643,68 @@ class KotlinSourceFileGenerator {
   private writeConstant(constant: Constant): void {
     const { typeSpeller } = this;
     const name = constant.name.text;
-    const type = typeSpeller.getKotlinType(constant.type!, "frozen");
-    const serializerExpression = typeSpeller.getSerializerExpression(
-      constant.type!,
-    );
-    const jsonStringLiteral = JSON.stringify(
-      JSON.stringify(constant.valueAsDenseJson),
-    );
-    this.push(
-      `val ${name}: ${type} by kotlin.lazy {\n`,
-      serializerExpression,
-      `.fromJsonCode(${jsonStringLiteral})\n`,
-      "}\n\n",
-    );
+    const type = constant.type!;
+    const kotlinType = typeSpeller.getKotlinType(constant.type!, "frozen");
+    const tryGetKotlinConstLiteral: () => string | undefined = () => {
+      if (type.kind !== "primitive") {
+        return undefined;
+      }
+      switch (type.primitive) {
+        case "bool":
+        case "int32":
+        case "string":
+          return JSON.stringify(constant.valueAsDenseJson);
+        case "int64":
+          return JSON.stringify(constant.valueAsDenseJson) + "L";
+        case "uint64":
+          return JSON.stringify(constant.valueAsDenseJson) + "UL";
+        case "float32": {
+          const number = constant.valueAsDenseJson as number;
+          if (Number.isFinite(number)) {
+            return JSON.stringify(number) + "F";
+          } else if (Number.isNaN(number)) {
+            return "Float.NaN";
+          } else if (number > 0) {
+            return "Float.POSITIVE_INFINITY";
+          } else {
+            return "Float.NEGATIVE_INFINITY";
+          }
+        }
+        case "float64": {
+          const number = constant.valueAsDenseJson as number;
+          if (Number.isFinite(number)) {
+            return JSON.stringify(number);
+          } else if (Number.isNaN(number)) {
+            return "Double.NaN";
+          } else if (number > 0) {
+            return "Double.POSITIVE_INFINITY";
+          } else {
+            return "Double.NEGATIVE_INFINITY";
+          }
+        }
+        default:
+          return undefined;
+      }
+    };
+    const kotlinConstLiteral = tryGetKotlinConstLiteral();
+    if (kotlinConstLiteral !== undefined) {
+      this.push(
+        `const val ${name}: ${kotlinType} = ${kotlinConstLiteral};\n\n`,
+      );
+    } else {
+      const serializerExpression = typeSpeller.getSerializerExpression(
+        constant.type!,
+      );
+      const jsonStringLiteral = JSON.stringify(
+        JSON.stringify(constant.valueAsDenseJson),
+      );
+      this.push(
+        `val ${name}: ${kotlinType} by kotlin.lazy {\n`,
+        serializerExpression,
+        `.fromJsonCode(${jsonStringLiteral})\n`,
+        "}\n\n",
+      );
+    }
   }
 
   private getDefaultExpression(type: ResolvedType): string {

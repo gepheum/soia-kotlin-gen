@@ -193,7 +193,7 @@ export class TypeSpeller {
       }
       case "array": {
         if (type.key) {
-          const keyChain = type.key.path.join(".");
+          const keyChain = type.key.path.map((f) => f.name.text).join(".");
           const path = type.key.path
             .map((f) => this.namer.structFieldToKotlinName(f.name.text))
             .join(".");
