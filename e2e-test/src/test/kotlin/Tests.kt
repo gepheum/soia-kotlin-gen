@@ -529,6 +529,45 @@ class Tests {
     }
 
     @Test
+    fun `test keyed list - copy`() {
+        val items =
+            soiagen.structs.Items.partial(
+                arrayWithStringKey =
+                    listOf(
+                        soiagen.structs.Item.partial(
+                            string = "a123",
+                            otherString = "b123",
+                        ),
+                    ),
+                arrayWithOtherStringKey =
+                    listOf(
+                        soiagen.structs.Item.partial(
+                            string = "a234",
+                            otherString = "b234",
+                        ),
+                    ),
+            )
+
+        val firstCopy =
+            soiagen.structs.Items.partial(
+                arrayWithStringKey = items.arrayWithStringKey,
+                arrayWithOtherStringKey = items.arrayWithOtherStringKey,
+            )
+        // The lists should *not* have been copied.
+        assertThat(firstCopy.arrayWithStringKey).isSameInstanceAs(items.arrayWithStringKey)
+        assertThat(firstCopy.arrayWithOtherStringKey).isSameInstanceAs(items.arrayWithOtherStringKey)
+
+        val secondCopy =
+            soiagen.structs.Items.partial(
+                arrayWithStringKey = items.arrayWithOtherStringKey,
+                arrayWithOtherStringKey = items.arrayWithStringKey,
+            )
+        // The lists should have been copied since the keys are different.
+        assertThat(secondCopy.arrayWithStringKey).isNotSameInstanceAs(items.arrayWithOtherStringKey)
+        assertThat(secondCopy.arrayWithOtherStringKey).isNotSameInstanceAs(items.arrayWithStringKey)
+    }
+
+    @Test
     fun `test generated enum - obtaining instances`() {
         assertThat(
             soiagen.enums.Status.UNKNOWN,
@@ -894,35 +933,169 @@ class Tests {
     }
 
     @Test
-    fun `test generated struct - serialize and deserialize with unknown fields`() {
+    fun `test generated struct - unrecognized fields - JSON`() {
         val fooAfter =
-            soiagen.schema_change.FooAfter(
-                bars = listOf(),
-                n = 3,
+            soiagen.schema_change.FooAfter.partial(
+                n = 42,
+                bit = true,
+                bars =
+                    listOf(
+                        soiagen.schema_change.BarAfter.partial(
+                            x = 1.0F,
+                            s = "bar1",
+                        ),
+                        soiagen.schema_change.BarAfter.partial(
+                            x = 2.0F,
+                            s = "bar2",
+                        ),
+                    ),
                 enums =
                     listOf(
-                        soiagen.schema_change.EnumAfter.B,
+                        soiagen.schema_change.EnumAfter.A,
+                        soiagen.schema_change.EnumAfter.CWrapper("foo"),
+                        soiagen.schema_change.EnumAfter.D,
                     ),
-                bit = true,
             )
-        val json = soiagen.schema_change.FooAfter.Serializer.toJson(fooAfter)
-
-        val fooBeforeWithUnrecognized = soiagen.schema_change.FooBefore.Serializer.fromJson(json, keepUnrecognizedFields = true)
-        val fooAfterFromUnrecognized =
-            soiagen.schema_change.FooAfter.Serializer.fromJson(
-                soiagen.schema_change.FooBefore.Serializer.toJson(fooBeforeWithUnrecognized),
-            )
-        assertThat(fooAfterFromUnrecognized).isEqualTo(fooAfter)
-
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val jsonCode = fooAfterSerializer.toJsonCode(fooAfter)
+        assertThat(jsonCode).isEqualTo("[[[1.0,0,0,\"bar1\"],[2.0,0,0,\"bar2\"]],42,[1,[5,\"foo\"],6],1]")
         assertThat(
-            soiagen.schema_change.FooAfter.Serializer.toJson(
-                soiagen.schema_change.FooAfter.Serializer.fromJson(
-                    soiagen.schema_change.FooBefore.Serializer.toJson(soiagen.schema_change.FooBefore.Serializer.fromJson(json)),
+            fooBeforeSerializer.toJsonCode(
+                fooBeforeSerializer.fromJsonCode(
+                    jsonCode,
+                    keepUnrecognizedFields = true,
+                ),
+            ),
+        ).isEqualTo(jsonCode)
+        // And now without keep-unrecognized-fields
+        assertThat(
+            fooBeforeSerializer.toJsonCode(
+                fooBeforeSerializer.fromJsonCode(
+                    jsonCode,
+                ),
+            ),
+        ).isEqualTo("[[[1.0],[2.0]],42,[1,0,0]]")
+    }
+
+    @Test
+    fun `test generated struct - unrecognized fields - bytes`() {
+        val fooAfter =
+            soiagen.schema_change.FooAfter.partial(
+                n = 42,
+                bit = true,
+                bars =
+                    listOf(
+                        soiagen.schema_change.BarAfter.partial(
+                            x = 1.0F,
+                            s = "bar1",
+                        ),
+                        soiagen.schema_change.BarAfter.partial(
+                            x = 2.0F,
+                            s = "bar2",
+                        ),
+                    ),
+                enums =
+                    listOf(
+                        soiagen.schema_change.EnumAfter.A,
+                        soiagen.schema_change.EnumAfter.CWrapper("foo"),
+                        soiagen.schema_change.EnumAfter.D,
+                    ),
+            )
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val bytes = fooAfterSerializer.toBytes(fooAfter)
+        assertThat(fooAfterSerializer.fromBytes(bytes)).isEqualTo(fooAfter)
+        assertThat(
+            bytes.hex(),
+        ).isEqualTo("736f6961fa04f8fa04f00000803f0000f30462617231fa04f0000000400000f304626172322af901f805f303666f6f0601")
+        assertThat(
+            fooBeforeSerializer.toBytes(
+                fooBeforeSerializer.fromBytes(
+                    bytes,
+                    keepUnrecognizedFields = true,
+                ),
+            ),
+        ).isEqualTo(bytes)
+        // And now without keep-unrecognized-fields
+        assertThat(
+            fooBeforeSerializer.toBytes(
+                fooBeforeSerializer.fromBytes(
+                    bytes,
                 ),
             ),
         ).isEqualTo(
-            soiagen.schema_change.FooBefore.Serializer.toJson(soiagen.schema_change.FooBefore.Serializer.fromJson(json)),
+            fooBeforeSerializer.toBytes(
+                soiagen.schema_change.FooBefore.partial(
+                    bars =
+                        listOf(
+                            soiagen.schema_change.BarBefore.partial(
+                                x = 1.0F,
+                            ),
+                            soiagen.schema_change.BarBefore.partial(
+                                x = 2.0F,
+                            ),
+                        ),
+                    n = 42,
+                    enums =
+                        listOf(
+                            soiagen.schema_change.EnumBefore.A,
+                            soiagen.schema_change.EnumBefore.UNKNOWN,
+                            soiagen.schema_change.EnumBefore.UNKNOWN,
+                        ),
+                ),
+            ),
         )
+    }
+
+    @Test
+    fun `test generated struct - honor removed fields - JSON`() {
+        val fooBefore =
+            soiagen.schema_change.FooBefore.partial(
+                bars = listOf(soiagen.schema_change.BarBefore.partial(y = true)),
+                enums =
+                    listOf(
+                        soiagen.schema_change.EnumBefore.B,
+                        soiagen.schema_change.EnumBefore.CWrapper("foo"),
+                    ),
+            )
+
+        // Serialize FooBefore to JSON
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val jsonCode = fooBeforeSerializer.toJsonCode(fooBefore)
+        assertThat(jsonCode).isEqualTo("[[[0.0,0,1]],0,[3,[4,\"foo\"]]]")
+
+        val fooAfter =
+            fooAfterSerializer
+                .fromJsonCode(jsonCode, keepUnrecognizedFields = true)
+
+        assertThat(fooAfterSerializer.toJsonCode(fooAfter)).isEqualTo("[[[]],0,[0,0]]")
+    }
+
+    @Test
+    fun `test generated struct - honor removed fields - bytes`() {
+        val fooBefore =
+            soiagen.schema_change.FooBefore.partial(
+                bars = listOf(soiagen.schema_change.BarBefore.partial(y = true)),
+                enums =
+                    listOf(
+                        soiagen.schema_change.EnumBefore.B,
+                        soiagen.schema_change.EnumBefore.CWrapper("foo"),
+                    ),
+            )
+
+        // Serialize FooBefore to JSON
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val bytes = fooBeforeSerializer.toBytes(fooBefore)
+        assertThat(bytes.hex()).isEqualTo("736f6961f9f7f900000100f803fef303666f6f")
+
+        val fooAfter =
+            fooAfterSerializer
+                .fromBytes(bytes, keepUnrecognizedFields = true)
+
+        assertThat(fooAfterSerializer.toBytes(fooAfter).hex()).isEqualTo("736f6961f9f7f600f80000")
     }
 
     @Test

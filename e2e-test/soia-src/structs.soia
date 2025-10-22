@@ -37,6 +37,7 @@ struct Item {
   weekday: Weekday;
   bytes: bytes;
   timestamp: timestamp;
+  other_string: string;
 }
 
 struct Items {
@@ -48,6 +49,7 @@ struct Items {
   array_with_enum_key: [Item|weekday.kind];
   array_with_bytes_key: [Item|bytes];
   array_with_timestamp_key: [Item|timestamp];
+  array_with_other_string_key: [Item|other_string];
 }
 
 struct JsonValues {
