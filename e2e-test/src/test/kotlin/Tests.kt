@@ -1132,6 +1132,11 @@ class Tests {
                 ),
             ),
         )
+        assertThat(soiagen.constants.INFINITY).isEqualTo(Float.POSITIVE_INFINITY)
+        assertThat(soiagen.constants.NEGATIVE_INFINITY).isEqualTo(Float.NEGATIVE_INFINITY)
+        assertThat(soiagen.constants.NAN).isEqualTo(Double.NaN)
+        assertThat(soiagen.constants.LARGE_INT64).isEqualTo(9223372036854775807)
+        assertThat(soiagen.constants.PI).isEqualTo(3.141592653589793)
     }
 
     @Test
@@ -1158,3 +1163,11 @@ class ServiceImpl {
             .build()
     }
 }
+
+const val INFINITY = soiagen.constants.INFINITY
+const val NEGATIVE_INFINITY = soiagen.constants.NEGATIVE_INFINITY
+const val NAN = soiagen.constants.NAN
+const val LARGE_INT64 = soiagen.constants.LARGE_INT64
+const val PI = soiagen.constants.PI
+const val ONE_BOOL = soiagen.constants.ONE_BOOL
+const val ONE_SINGLE_QUOTED_STRING = soiagen.constants.ONE_SINGLE_QUOTED_STRING

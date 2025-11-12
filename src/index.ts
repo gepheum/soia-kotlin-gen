@@ -649,37 +649,37 @@ class KotlinSourceFileGenerator {
       if (type.kind !== "primitive") {
         return undefined;
       }
+      const { valueAsDenseJson } = constant;
       switch (type.primitive) {
         case "bool":
+          return JSON.stringify(!!valueAsDenseJson);
         case "int32":
         case "string":
-          return JSON.stringify(constant.valueAsDenseJson);
+          return JSON.stringify(valueAsDenseJson);
         case "int64":
-          return JSON.stringify(constant.valueAsDenseJson) + "L";
+          return `${valueAsDenseJson}L`;
         case "uint64":
-          return JSON.stringify(constant.valueAsDenseJson) + "UL";
+          return `${valueAsDenseJson}UL`;
         case "float32": {
-          const number = constant.valueAsDenseJson as number;
-          if (Number.isFinite(number)) {
-            return JSON.stringify(number) + "F";
-          } else if (Number.isNaN(number)) {
+          if (valueAsDenseJson === "NaN") {
             return "Float.NaN";
-          } else if (number > 0) {
+          } else if (valueAsDenseJson === "Infinity") {
             return "Float.POSITIVE_INFINITY";
-          } else {
+          } else if (valueAsDenseJson === "-Infinity") {
             return "Float.NEGATIVE_INFINITY";
+          } else {
+            return JSON.stringify(valueAsDenseJson) + "F";
           }
         }
         case "float64": {
-          const number = constant.valueAsDenseJson as number;
-          if (Number.isFinite(number)) {
-            return JSON.stringify(number);
-          } else if (Number.isNaN(number)) {
+          if (valueAsDenseJson === "NaN") {
             return "Double.NaN";
-          } else if (number > 0) {
+          } else if (valueAsDenseJson === "Infinity") {
             return "Double.POSITIVE_INFINITY";
-          } else {
+          } else if (valueAsDenseJson === "-Infinity") {
             return "Double.NEGATIVE_INFINITY";
+          } else {
+            return JSON.stringify(valueAsDenseJson);
           }
         }
         default:
