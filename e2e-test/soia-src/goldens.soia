@@ -216,6 +216,7 @@ const UNIT_TESTS: [UnitTest] = [
         ],
         expected_readable_json: [
           '{\n  "unix_millis": 0,\n  "formatted": "1970-01-01T00:00:00.000Z"\n}',
+          '{\n  "unix_millis": 0,\n  "formatted": "1970-01-01T00:00:00Z"\n}',
         ],
         expected_bytes: [
           "hex:736f696100",

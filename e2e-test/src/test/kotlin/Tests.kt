@@ -364,6 +364,10 @@ class Tests {
 
         val expectedJson =
             "{\n" +
+                "  \"type\": {\n" +
+                "    \"kind\": \"record\",\n" +
+                "    \"value\": \"vehicles/car.soia:Car\"\n" +
+                "  },\n" +
                 "  \"records\": [\n" +
                 "    {\n" +
                 "      \"kind\": \"struct\",\n" +
@@ -405,8 +409,7 @@ class Tests {
                 "          }\n" +
                 "        }\n" +
                 "      ],\n" +
-                "      \"removed_fields\": [\n" +
-                "      ]\n" +
+                "      \"removed_fields\": []\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"kind\": \"struct\",\n" +
@@ -421,14 +424,9 @@ class Tests {
                 "          }\n" +
                 "        }\n" +
                 "      ],\n" +
-                "      \"removed_fields\": [\n" +
-                "      ]\n" +
+                "      \"removed_fields\": []\n" +
                 "    }\n" +
-                "  ],\n" +
-                "  \"type\": {\n" +
-                "    \"kind\": \"record\",\n" +
-                "    \"value\": \"vehicles/car.soia:Car\"\n" +
-                "  }\n" +
+                "  ]\n" +
                 "}"
         assertThat(
             typeDescriptor.asJsonCode(),
@@ -730,7 +728,7 @@ class Tests {
         assertThat(
             typeDescriptor.fields,
         ).hasSize(
-            3,
+            2,
         )
         assertThat(
             typeDescriptor.removedNumbers,
