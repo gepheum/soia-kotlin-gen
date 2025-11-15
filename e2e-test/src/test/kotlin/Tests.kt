@@ -408,8 +408,7 @@ class Tests {
                 "            }\n" +
                 "          }\n" +
                 "        }\n" +
-                "      ],\n" +
-                "      \"removed_fields\": []\n" +
+                "      ]\n" +
                 "    },\n" +
                 "    {\n" +
                 "      \"kind\": \"struct\",\n" +
@@ -423,8 +422,7 @@ class Tests {
                 "            \"value\": \"int64\"\n" +
                 "          }\n" +
                 "        }\n" +
-                "      ],\n" +
-                "      \"removed_fields\": []\n" +
+                "      ]\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}"

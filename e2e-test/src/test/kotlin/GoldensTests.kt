@@ -1,12 +1,14 @@
 import land.soia.Serializer
 import land.soia.Serializers
 import land.soia.reflection.asJsonCode
+import land.soia.reflection.parseTypeDescriptor
 import okio.ByteString
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import soiagen.goldens.Assertion
 import soiagen.goldens.BytesExpression
 import soiagen.goldens.Color
+import soiagen.goldens.KeyedArrays
 import soiagen.goldens.MyEnum
 import soiagen.goldens.Point
 import soiagen.goldens.StringExpression
@@ -287,12 +289,24 @@ class GoldensTests {
             }
         }
 
-        if (input.expectedTypeDescriptor != null) {
+        val expectedTypeDescriptor = input.expectedTypeDescriptor
+        if (expectedTypeDescriptor != null) {
             val actual = typedValue.serializer.typeDescriptor.asJsonCode()
             verifyAssertion(
                 Assertion.createStringEqual(
                     actual = StringExpression.LiteralWrapper(actual),
-                    expected = StringExpression.LiteralWrapper(input.expectedTypeDescriptor),
+                    expected = StringExpression.LiteralWrapper(expectedTypeDescriptor),
+                ),
+            )
+            verifyAssertion(
+                Assertion.createStringEqual(
+                    actual =
+                        StringExpression.LiteralWrapper(
+                            parseTypeDescriptor(
+                                actual,
+                            ).asJsonCode(),
+                        ),
+                    expected = StringExpression.LiteralWrapper(expectedTypeDescriptor),
                 ),
             )
         }
@@ -498,6 +512,11 @@ class GoldensTests {
                 TypedValueType(
                     (literal as TypedValue.MyEnumWrapper).value,
                     MyEnum.Serializer,
+                )
+            TypedValue.Kind.KEYED_ARRAYS_WRAPPER ->
+                TypedValueType(
+                    (literal as TypedValue.KeyedArraysWrapper).value,
+                    KeyedArrays.Serializer,
                 )
             TypedValue.Kind.ROUND_TRIP_DENSE_JSON_WRAPPER -> {
                 val other = evaluateTypedValue((literal as TypedValue.RoundTripDenseJsonWrapper).value)
