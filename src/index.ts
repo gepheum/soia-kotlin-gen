@@ -311,8 +311,8 @@ class KotlinSourceFileGenerator {
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
       ");\n\n",
-      "val Serializer = land.soia.internal.makeSerializer(serializerImpl);\n\n",
-      "val TypeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
+      "val serializer = land.soia.internal.makeSerializer(serializerImpl);\n\n",
+      "val typeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const field of fields) {
@@ -552,8 +552,8 @@ class KotlinSourceFileGenerator {
       'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
       ";\n\n",
-      "val Serializer = land.soia.internal.makeSerializer(_serializerImpl);\n\n",
-      "val TypeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
+      "val serializer = land.soia.internal.makeSerializer(_serializerImpl);\n\n",
+      "val typeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
     for (const constField of constantFields) {

@@ -178,7 +178,7 @@ class GoldensTests {
             buffer[4] = 248.toByte()
             expectedBytesList.copyInto(buffer, 5, prefix.length)
             buffer[expectedBytesList.size + 1] = 1
-            val point = Point.Serializer.fromBytes(buffer)
+            val point = Point.serializer.fromBytes(buffer)
             if (point.x != 1) {
                 throw AssertionError(
                     message = "Failed to skip value: got point.x=${point.x}, expected 1; input: $input",
@@ -503,22 +503,22 @@ class GoldensTests {
             TypedValue.Kind.POINT_WRAPPER ->
                 TypedValueType(
                     (literal as TypedValue.PointWrapper).value,
-                    Point.Serializer,
+                    Point.serializer,
                 )
             TypedValue.Kind.COLOR_WRAPPER ->
                 TypedValueType(
                     (literal as TypedValue.ColorWrapper).value,
-                    Color.Serializer,
+                    Color.serializer,
                 )
             TypedValue.Kind.MY_ENUM_WRAPPER ->
                 TypedValueType(
                     (literal as TypedValue.MyEnumWrapper).value,
-                    MyEnum.Serializer,
+                    MyEnum.serializer,
                 )
             TypedValue.Kind.KEYED_ARRAYS_WRAPPER ->
                 TypedValueType(
                     (literal as TypedValue.KeyedArraysWrapper).value,
-                    KeyedArrays.Serializer,
+                    KeyedArrays.serializer,
                 )
             TypedValue.Kind.ROUND_TRIP_DENSE_JSON_WRAPPER -> {
                 val other = evaluateTypedValue((literal as TypedValue.RoundTripDenseJsonWrapper).value)
@@ -556,98 +556,98 @@ class GoldensTests {
             TypedValue.Kind.POINT_FROM_JSON_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonKeepUnrecognized(
-                        Point.Serializer,
+                        Point.serializer,
                         evaluateString((literal as TypedValue.PointFromJsonKeepUnrecognizedWrapper).value),
                     ),
-                    Point.Serializer,
+                    Point.serializer,
                 )
             TypedValue.Kind.POINT_FROM_JSON_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonDropUnrecognized(
-                        Point.Serializer,
+                        Point.serializer,
                         evaluateString((literal as TypedValue.PointFromJsonDropUnrecognizedWrapper).value),
                     ),
-                    Point.Serializer,
+                    Point.serializer,
                 )
             TypedValue.Kind.POINT_FROM_BYTES_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesKeepUnrecognized(
-                        Point.Serializer,
+                        Point.serializer,
                         evaluateBytes((literal as TypedValue.PointFromBytesKeepUnrecognizedWrapper).value),
                     ),
-                    Point.Serializer,
+                    Point.serializer,
                 )
             TypedValue.Kind.POINT_FROM_BYTES_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesDropUnrecognizedFields(
-                        Point.Serializer,
+                        Point.serializer,
                         evaluateBytes((literal as TypedValue.PointFromBytesDropUnrecognizedWrapper).value),
                     ),
-                    Point.Serializer,
+                    Point.serializer,
                 )
             TypedValue.Kind.COLOR_FROM_JSON_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonKeepUnrecognized(
-                        Color.Serializer,
+                        Color.serializer,
                         evaluateString((literal as TypedValue.ColorFromJsonKeepUnrecognizedWrapper).value),
                     ),
-                    Color.Serializer,
+                    Color.serializer,
                 )
             TypedValue.Kind.COLOR_FROM_JSON_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonDropUnrecognized(
-                        Color.Serializer,
+                        Color.serializer,
                         evaluateString((literal as TypedValue.ColorFromJsonDropUnrecognizedWrapper).value),
                     ),
-                    Color.Serializer,
+                    Color.serializer,
                 )
             TypedValue.Kind.COLOR_FROM_BYTES_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesKeepUnrecognized(
-                        Color.Serializer,
+                        Color.serializer,
                         evaluateBytes((literal as TypedValue.ColorFromBytesKeepUnrecognizedWrapper).value),
                     ),
-                    Color.Serializer,
+                    Color.serializer,
                 )
             TypedValue.Kind.COLOR_FROM_BYTES_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesDropUnrecognizedFields(
-                        Color.Serializer,
+                        Color.serializer,
                         evaluateBytes((literal as TypedValue.ColorFromBytesDropUnrecognizedWrapper).value),
                     ),
-                    Color.Serializer,
+                    Color.serializer,
                 )
             TypedValue.Kind.MY_ENUM_FROM_JSON_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonKeepUnrecognized(
-                        MyEnum.Serializer,
+                        MyEnum.serializer,
                         evaluateString((literal as TypedValue.MyEnumFromJsonKeepUnrecognizedWrapper).value),
                     ),
-                    MyEnum.Serializer,
+                    MyEnum.serializer,
                 )
             TypedValue.Kind.MY_ENUM_FROM_JSON_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromJsonDropUnrecognized(
-                        MyEnum.Serializer,
+                        MyEnum.serializer,
                         evaluateString((literal as TypedValue.MyEnumFromJsonDropUnrecognizedWrapper).value),
                     ),
-                    MyEnum.Serializer,
+                    MyEnum.serializer,
                 )
             TypedValue.Kind.MY_ENUM_FROM_BYTES_KEEP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesKeepUnrecognized(
-                        MyEnum.Serializer,
+                        MyEnum.serializer,
                         evaluateBytes((literal as TypedValue.MyEnumFromBytesKeepUnrecognizedWrapper).value),
                     ),
-                    MyEnum.Serializer,
+                    MyEnum.serializer,
                 )
             TypedValue.Kind.MY_ENUM_FROM_BYTES_DROP_UNRECOGNIZED_WRAPPER ->
                 TypedValueType(
                     fromBytesDropUnrecognizedFields(
-                        MyEnum.Serializer,
+                        MyEnum.serializer,
                         evaluateBytes((literal as TypedValue.MyEnumFromBytesDropUnrecognizedWrapper).value),
                     ),
-                    MyEnum.Serializer,
+                    MyEnum.serializer,
                 )
             TypedValue.Kind.UNKNOWN -> throw Exception("Unknown typed value")
         }

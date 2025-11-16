@@ -298,41 +298,41 @@ class Tests {
     @Test
     fun `test generated struct - reflection`() {
         assertThat(
-            soiagen.structs.Item.User.TypeDescriptor.name,
+            soiagen.structs.Item.User.typeDescriptor.name,
         ).isEqualTo(
             "User",
         )
         assertThat(
-            soiagen.structs.Item.User.TypeDescriptor.qualifiedName,
+            soiagen.structs.Item.User.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item.User",
         )
         assertThat(
-            soiagen.structs.Item.TypeDescriptor.name,
+            soiagen.structs.Item.typeDescriptor.name,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.structs.Item.TypeDescriptor.qualifiedName,
+            soiagen.structs.Item.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.vehicles.car.Car.TypeDescriptor.modulePath,
+            soiagen.vehicles.car.Car.typeDescriptor.modulePath,
         ).isEqualTo(
             "vehicles/car.soia",
         )
 
         assertThat(
-            soiagen.structs.Color.TypeDescriptor.removedNumbers,
+            soiagen.structs.Color.typeDescriptor.removedNumbers,
         ).isEmpty()
         assertThat(
-            soiagen.structs.FullName.TypeDescriptor.removedNumbers,
+            soiagen.structs.FullName.typeDescriptor.removedNumbers,
         ).isEqualTo(
             setOf(1),
         )
 
-        val typeDescriptor = soiagen.vehicles.car.Car.TypeDescriptor
+        val typeDescriptor = soiagen.vehicles.car.Car.typeDescriptor
         assertThat(
             typeDescriptor.fields,
         ).hasSize(4)
@@ -708,7 +708,7 @@ class Tests {
     @Suppress("UNCHECKED_CAST")
     fun `test generated enum - reflection`() {
         val typeDescriptor: EnumDescriptor.Reflective<soiagen.enums.Status> =
-            soiagen.enums.Status.TypeDescriptor
+            soiagen.enums.Status.typeDescriptor
         assertThat(
             typeDescriptor.name,
         ).isEqualTo(
@@ -876,7 +876,7 @@ class Tests {
                         soiagen.structs.Point.Mutable(x = 1, y = 2),
                     ),
             )
-        val serializer = soiagen.structs.Triangle.Serializer
+        val serializer = soiagen.structs.Triangle.serializer
         assertThat(
             serializer.toJsonCode(triangle),
         ).isEqualTo(
@@ -901,7 +901,7 @@ class Tests {
                 code = 100,
                 message = "The Message",
             )
-        val serializer = soiagen.enums.Status.Serializer
+        val serializer = soiagen.enums.Status.serializer
         assertThat(
             serializer.toJsonCode(status),
         ).isEqualTo(
@@ -953,8 +953,8 @@ class Tests {
                         soiagen.schema_change.EnumAfter.D,
                     ),
             )
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
         val jsonCode = fooAfterSerializer.toJsonCode(fooAfter)
         assertThat(jsonCode).isEqualTo("[[[1.0,0,0,\"bar1\"],[2.0,0,0,\"bar2\"]],42,[1,[5,\"foo\"],6],1]")
         assertThat(
@@ -999,8 +999,8 @@ class Tests {
                         soiagen.schema_change.EnumAfter.D,
                     ),
             )
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
         val bytes = fooAfterSerializer.toBytes(fooAfter)
         assertThat(fooAfterSerializer.fromBytes(bytes)).isEqualTo(fooAfter)
         assertThat(
@@ -1058,8 +1058,8 @@ class Tests {
             )
 
         // Serialize FooBefore to JSON
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
         val jsonCode = fooBeforeSerializer.toJsonCode(fooBefore)
         assertThat(jsonCode).isEqualTo("[[[0.0,0,1]],0,[3,[4,\"foo\"]]]")
 
@@ -1083,8 +1083,8 @@ class Tests {
             )
 
         // Serialize FooBefore to JSON
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.Serializer
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.Serializer
+        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
+        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
         val bytes = fooBeforeSerializer.toBytes(fooBefore)
         assertThat(bytes.hex()).isEqualTo("736f6961f9f7f900000100f803fef303666f6f")
 

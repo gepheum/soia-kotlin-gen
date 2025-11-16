@@ -35,9 +35,7 @@ export class Namer {
       if (
         (parentType === "struct" && STRUCT_NESTED_TYPE_NAMES.has(name)) ||
         (parentType === "enum" &&
-          (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name))) ||
-        name === "Serializer" ||
-        name === "TypeDescriptor"
+          (ENUM_NESTED_TYPE_NAMES.has(name) || /[^a-z]Option$/.test(name)))
       ) {
         name += "_";
       }
