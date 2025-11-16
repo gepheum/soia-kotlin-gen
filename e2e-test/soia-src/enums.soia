@@ -26,6 +26,10 @@ enum EmptyEnum {}
 enum EnumWithNameConflict {
   SERIALIZER;
   if: bool;
+  foo: int32;
+  foo_wrapper: int32;
+  struct FooWrapper {}
+  struct Unknown {}
 }
 
 enum EnumWithStructField {
