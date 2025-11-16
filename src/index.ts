@@ -401,7 +401,7 @@ class KotlinSourceFileGenerator {
     const { recordMap } = typeSpeller;
     const { fields } = record.record;
     const constantFields = fields.filter((f) => !f.type);
-    const valueFields = fields.filter((f) => f.type);
+    const wrapperFields = fields.filter((f) => f.type);
     const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(
@@ -412,7 +412,7 @@ class KotlinSourceFileGenerator {
     for (const field of constantFields) {
       this.push(`${field.name.text}_CONST,\n`);
     }
-    for (const field of valueFields) {
+    for (const field of wrapperFields) {
       this.push(
         convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE"),
         "_WRAPPER,\n",
@@ -446,10 +446,10 @@ class KotlinSourceFileGenerator {
         `}\n\n`, // object
       );
     }
-    for (const valueField of valueFields) {
-      const valueType = valueField.type!;
+    for (const wrapperField of wrapperFields) {
+      const valueType = wrapperField.type!;
       const wrapperClassName =
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
         "Wrapper";
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
@@ -477,7 +477,7 @@ class KotlinSourceFileGenerator {
       const kindExpr =
         "Kind." +
         convertCase(
-          valueField.name.text,
+          wrapperField.name.text,
           "lower_underscore",
           "UPPER_UNDERSCORE",
         ) +
@@ -489,7 +489,7 @@ class KotlinSourceFileGenerator {
         "}\n\n",
         "override fun hashCode(): kotlin.Int {\n",
         "return this.value.hashCode() + ",
-        String(simpleHash(valueField.name.text) | 0),
+        String(simpleHash(wrapperField.name.text) | 0),
         ";\n",
         "}\n\n",
         "}\n\n", // class
@@ -507,8 +507,8 @@ class KotlinSourceFileGenerator {
       "companion object {\n",
       'val UNKNOWN = @kotlin.Suppress("DEPRECATION") Unknown(null);\n\n',
     );
-    for (const valueField of valueFields) {
-      const type = valueField.type!;
+    for (const wrapperField of wrapperFields) {
+      const type = wrapperField.type!;
       if (type.kind !== "record") {
         continue;
       }
@@ -520,9 +520,9 @@ class KotlinSourceFileGenerator {
       const structClassName = namer.getClassName(structLocation);
       const createFunName =
         "create" +
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel");
+        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel");
       const wrapperClassName =
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
         "Wrapper";
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
@@ -576,17 +576,17 @@ class KotlinSourceFileGenerator {
         ");\n",
       );
     }
-    for (const valueField of valueFields) {
+    for (const wrapperField of wrapperFields) {
       const serializerExpression = typeSpeller.getSerializerExpression(
-        valueField.type!,
+        wrapperField.type!,
       );
       const wrapperClassName =
-        convertCase(valueField.name.text, "lower_underscore", "UpperCamel") +
+        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
         "Wrapper";
       this.push(
-        "_serializerImpl.addValueField(\n",
-        `${valueField.number},\n`,
-        `"${valueField.name.text}",\n`,
+        "_serializerImpl.addWrapperField(\n",
+        `${wrapperField.number},\n`,
+        `"${wrapperField.name.text}",\n`,
         `${wrapperClassName}::class.java,\n`,
         `${serializerExpression},\n`,
         `{ ${wrapperClassName}(it) },\n`,
@@ -629,8 +629,8 @@ class KotlinSourceFileGenerator {
       method.responseType!,
     );
     this.push(
-      `val ${methodName}: land.soia.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
-      "land.soia.Method(\n",
+      `val ${methodName}: land.soia.service.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
+      "land.soia.service.Method(\n",
       `"${methodName}",\n`,
       `${method.number},\n`,
       requestSerializerExpr + ",\n",

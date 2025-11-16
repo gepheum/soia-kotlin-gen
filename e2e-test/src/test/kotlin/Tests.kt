@@ -1,16 +1,17 @@
 package land.soia
 
 import com.google.common.truth.Truth.assertThat
+import land.soia.reflection.ArrayDescriptor
 import land.soia.reflection.EnumConstantField
 import land.soia.reflection.EnumDescriptor
-import land.soia.reflection.EnumValueField
-import land.soia.reflection.ListDescriptor
+import land.soia.reflection.EnumWrapperField
 import land.soia.reflection.OptionalDescriptor
 import land.soia.reflection.PrimitiveDescriptor
 import land.soia.reflection.RecordDescriptor
 import land.soia.reflection.StructDescriptor
+import land.soia.reflection.TypeDescriptor
 import land.soia.reflection.asJsonCode
-import land.soia.reflection.parseTypeDescriptor
+import land.soia.service.Service
 import org.junit.jupiter.api.Test
 import java.net.http.HttpHeaders
 import java.time.Instant
@@ -430,13 +431,13 @@ class Tests {
             typeDescriptor.asJsonCode(),
         ).isEqualTo(expectedJson)
         assertThat(
-            parseTypeDescriptor(expectedJson).asJsonCode(),
+            TypeDescriptor.parseFromJsonCode(expectedJson).asJsonCode(),
         ).isEqualTo(expectedJson)
 
         when (field.type) {
             is PrimitiveDescriptor -> {}
             is OptionalDescriptor.Reflective -> {}
-            is ListDescriptor.Reflective -> {}
+            is ArrayDescriptor.Reflective -> {}
             is StructDescriptor.Reflective<*, *> -> {}
             is EnumDescriptor.Reflective<*> -> {}
         }
@@ -444,22 +445,22 @@ class Tests {
         when (field.type) {
             is PrimitiveDescriptor -> {}
             is OptionalDescriptor.Reflective -> {}
-            is ListDescriptor.Reflective -> {}
+            is ArrayDescriptor.Reflective -> {}
             is RecordDescriptor.Reflective<*> -> {}
         }
 
-        when (parseTypeDescriptor(expectedJson)) {
+        when (TypeDescriptor.parseFromJsonCode(expectedJson)) {
             is PrimitiveDescriptor -> {}
             is OptionalDescriptor -> {}
-            is ListDescriptor -> {}
+            is ArrayDescriptor -> {}
             is StructDescriptor -> {}
             is EnumDescriptor -> {}
         }
 
-        when (parseTypeDescriptor(expectedJson)) {
+        when (TypeDescriptor.parseFromJsonCode(expectedJson)) {
             is PrimitiveDescriptor -> {}
             is OptionalDescriptor -> {}
-            is ListDescriptor -> {}
+            is ArrayDescriptor -> {}
             is RecordDescriptor<*> -> {}
         }
     }
@@ -738,9 +739,9 @@ class Tests {
             assertThat(
                 field,
             ).isInstanceOf(
-                EnumValueField.Reflective::class.java,
+                EnumWrapperField.Reflective::class.java,
             )
-            field as EnumValueField.Reflective<soiagen.enums.Status, soiagen.enums.Status.Error>
+            field as EnumWrapperField.Reflective<soiagen.enums.Status, soiagen.enums.Status.Error>
             assertThat(
                 field.name,
             ).isEqualTo(
@@ -960,7 +961,7 @@ class Tests {
             fooBeforeSerializer.toJsonCode(
                 fooBeforeSerializer.fromJsonCode(
                     jsonCode,
-                    keepUnrecognizedFields = true,
+                    UnrecognizedFieldsPolicy.KEEP,
                 ),
             ),
         ).isEqualTo(jsonCode)
@@ -1009,7 +1010,7 @@ class Tests {
             fooBeforeSerializer.toBytes(
                 fooBeforeSerializer.fromBytes(
                     bytes,
-                    keepUnrecognizedFields = true,
+                    UnrecognizedFieldsPolicy.KEEP,
                 ),
             ),
         ).isEqualTo(bytes)
@@ -1064,7 +1065,7 @@ class Tests {
 
         val fooAfter =
             fooAfterSerializer
-                .fromJsonCode(jsonCode, keepUnrecognizedFields = true)
+                .fromJsonCode(jsonCode, UnrecognizedFieldsPolicy.KEEP)
 
         assertThat(fooAfterSerializer.toJsonCode(fooAfter)).isEqualTo("[[[]],0,[0,0]]")
     }
@@ -1089,7 +1090,7 @@ class Tests {
 
         val fooAfter =
             fooAfterSerializer
-                .fromBytes(bytes, keepUnrecognizedFields = true)
+                .fromBytes(bytes, UnrecognizedFieldsPolicy.KEEP)
 
         assertThat(fooAfterSerializer.toBytes(fooAfter).hex()).isEqualTo("736f6961f9f7f600f80000")
     }

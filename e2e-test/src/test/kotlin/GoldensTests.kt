@@ -1,7 +1,9 @@
+import land.soia.JsonFlavor
 import land.soia.Serializer
 import land.soia.Serializers
+import land.soia.UnrecognizedFieldsPolicy
+import land.soia.reflection.TypeDescriptor
 import land.soia.reflection.asJsonCode
-import land.soia.reflection.parseTypeDescriptor
 import okio.ByteString
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -302,7 +304,7 @@ class GoldensTests {
                 Assertion.createStringEqual(
                     actual =
                         StringExpression.LiteralWrapper(
-                            parseTypeDescriptor(
+                            TypeDescriptor.parseFromJsonCode(
                                 actual,
                             ).asJsonCode(),
                         ),
@@ -667,7 +669,7 @@ class GoldensTests {
         input: T,
     ): String {
         return try {
-            serializer.toJsonCode(input, readableFlavor = true)
+            serializer.toJsonCode(input, JsonFlavor.READABLE)
         } catch (e: Exception) {
             throw AssertionError(message = "Failed to serialize $input to readable JSON: $e")
         }
@@ -689,7 +691,7 @@ class GoldensTests {
         json: String,
     ): T {
         return try {
-            serializer.fromJsonCode(json, keepUnrecognizedFields = true)
+            serializer.fromJsonCode(json, UnrecognizedFieldsPolicy.KEEP)
         } catch (e: Exception) {
             throw AssertionError(message = "Failed to deserialize $json: $e")
         }
@@ -722,7 +724,7 @@ class GoldensTests {
         bytes: ByteString,
     ): T {
         return try {
-            serializer.fromBytes(bytes.toByteArray(), keepUnrecognizedFields = true)
+            serializer.fromBytes(bytes.toByteArray(), UnrecognizedFieldsPolicy.KEEP)
         } catch (e: Exception) {
             throw AssertionError(message = "Failed to deserialize ${bytes.hex()}: $e")
         }
