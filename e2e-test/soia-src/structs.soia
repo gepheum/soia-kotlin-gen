@@ -115,6 +115,7 @@ struct NameCollision {
 struct RecA {
   a: RecA;
   b: RecB;
+  c: bool;
 }
 
 struct RecB {

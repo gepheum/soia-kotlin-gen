@@ -895,6 +895,39 @@ class Tests {
     }
 
     @Test
+    fun `test generated struct - serialize and deserialize recursive`() {
+        val rec =
+            soiagen.structs.RecA.partial(
+                a =
+                    soiagen.structs.RecA.partial(
+                        b =
+                            soiagen.structs.RecB.partial(
+                                a =
+                                    soiagen.structs.RecA.partial(
+                                        c = true,
+                                    ),
+                            ),
+                    ),
+            )
+        val serializer = soiagen.structs.RecA.serializer
+        assertThat(
+            serializer.toJsonCode(rec),
+        ).isEqualTo(
+            "[[[],[[[],[],1]]]]",
+        )
+        assertThat(
+            serializer.fromJson(serializer.toJson(rec)),
+        ).isEqualTo(
+            rec,
+        )
+        assertThat(
+            serializer.fromBytes(serializer.toBytes(rec)),
+        ).isEqualTo(
+            rec,
+        )
+    }
+
+    @Test
     fun `test generated enum - serialize and deserialize`() {
         val status =
             soiagen.enums.Status.createError(
