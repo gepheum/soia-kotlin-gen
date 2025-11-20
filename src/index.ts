@@ -548,6 +548,8 @@ class KotlinSourceFileGenerator {
       "private val _serializerImpl =\n",
       `land.soia.internal.EnumSerializer.create<${qualifiedName}, Unknown>(\n`,
       `recordId = "${getRecordId(record)}",\n`,
+      "getKindOrdinal = { it.kind.ordinal },\n",
+      "kindCount = Kind.values().size,\n",
       "unknownInstance = UNKNOWN,\n",
       'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
@@ -567,27 +569,31 @@ class KotlinSourceFileGenerator {
       "_finalizationCounter += 1;\n",
       `if (_finalizationCounter == ${constantFields.length + 1}) {\n`,
     );
-    for (const constField of constantFields) {
+    for (const field of constantFields) {
       this.push(
         "_serializerImpl.addConstantField(\n",
-        `${constField.number},\n`,
-        `"${constField.name.text}",\n`,
-        `${toEnumConstantName(constField)},\n`,
+        `${field.number},\n`,
+        `"${field.name.text}",\n`,
+        `Kind.${field.name.text}_CONST.ordinal,\n`,
+        `${toEnumConstantName(field)},\n`,
         ");\n",
       );
     }
-    for (const wrapperField of wrapperFields) {
+    for (const field of wrapperFields) {
       const serializerExpression = typeSpeller.getSerializerExpression(
-        wrapperField.type!,
+        field.type!,
       );
       const wrapperClassName =
-        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
+        convertCase(field.name.text, "lower_underscore", "UpperCamel") +
         "Wrapper";
+      const kindConstName =
+        convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE") +
+        "_WRAPPER";
       this.push(
         "_serializerImpl.addWrapperField(\n",
-        `${wrapperField.number},\n`,
-        `"${wrapperField.name.text}",\n`,
-        `${wrapperClassName}::class.java,\n`,
+        `${field.number},\n`,
+        `"${field.name.text}",\n`,
+        `Kind.${kindConstName}.ordinal,\n`,
         `${serializerExpression},\n`,
         `{ ${wrapperClassName}(it) },\n`,
         ") { it.value };\n",
@@ -644,7 +650,7 @@ class KotlinSourceFileGenerator {
     const { typeSpeller } = this;
     const name = constant.name.text;
     const type = constant.type!;
-    const kotlinType = typeSpeller.getKotlinType(constant.type!, "frozen");
+    const kotlinType = typeSpeller.getKotlinType(type, "frozen");
     const tryGetKotlinConstLiteral: () => string | undefined = () => {
       if (type.kind !== "primitive") {
         return undefined;
