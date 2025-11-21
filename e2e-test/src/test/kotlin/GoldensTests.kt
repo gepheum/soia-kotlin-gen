@@ -3,7 +3,6 @@ import land.soia.Serializer
 import land.soia.Serializers
 import land.soia.UnrecognizedFieldsPolicy
 import land.soia.reflection.TypeDescriptor
-import land.soia.reflection.asJsonCode
 import okio.ByteString
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -13,6 +12,8 @@ import soiagen.goldens.Color
 import soiagen.goldens.KeyedArrays
 import soiagen.goldens.MyEnum
 import soiagen.goldens.Point
+import soiagen.goldens.RecEnum
+import soiagen.goldens.RecStruct
 import soiagen.goldens.StringExpression
 import soiagen.goldens.TypedValue
 import soiagen.goldens.UNIT_TESTS
@@ -520,13 +521,23 @@ class GoldensTests {
                     (literal as TypedValue.KeyedArraysWrapper).value,
                     KeyedArrays.serializer,
                 )
+            TypedValue.Kind.REC_STRUCT_WRAPPER ->
+                TypedValueType(
+                    (literal as TypedValue.RecStructWrapper).value,
+                    RecStruct.serializer,
+                )
+            TypedValue.Kind.REC_ENUM_WRAPPER ->
+                TypedValueType(
+                    (literal as TypedValue.RecEnumWrapper).value,
+                    RecEnum.serializer,
+                )
             TypedValue.Kind.ROUND_TRIP_DENSE_JSON_WRAPPER -> {
                 val other = evaluateTypedValue((literal as TypedValue.RoundTripDenseJsonWrapper).value)
                 @Suppress("UNCHECKED_CAST")
                 TypedValueType(
                     fromJsonDropUnrecognized(
                         other.serializer as Serializer<Any?>,
-                        toDenseJson(other.serializer as Serializer<Any?>, other.value),
+                        toDenseJson(other.serializer, other.value),
                     ),
                     other.serializer,
                 )
@@ -537,7 +548,7 @@ class GoldensTests {
                 TypedValueType(
                     fromJsonDropUnrecognized(
                         other.serializer as Serializer<Any?>,
-                        toReadableJson(other.serializer as Serializer<Any?>, other.value),
+                        toReadableJson(other.serializer, other.value),
                     ),
                     other.serializer,
                 )
@@ -548,7 +559,7 @@ class GoldensTests {
                 TypedValueType(
                     fromBytesDropUnrecognizedFields(
                         other.serializer as Serializer<Any?>,
-                        toBytes(other.serializer as Serializer<Any?>, other.value),
+                        toBytes(other.serializer, other.value),
                     ),
                     other.serializer,
                 )

@@ -10,7 +10,6 @@ import land.soia.reflection.PrimitiveDescriptor
 import land.soia.reflection.RecordDescriptor
 import land.soia.reflection.StructDescriptor
 import land.soia.reflection.TypeDescriptor
-import land.soia.reflection.asJsonCode
 import land.soia.service.Service
 import org.junit.jupiter.api.Test
 import java.net.http.HttpHeaders
