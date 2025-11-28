@@ -434,18 +434,20 @@ class Tests {
         ).isEqualTo(expectedJson)
 
         when (field.type) {
-            is PrimitiveDescriptor -> {}
-            is OptionalDescriptor.Reflective -> {}
-            is ArrayDescriptor.Reflective -> {}
+            is PrimitiveDescriptor.Reflective<*> -> {}
+            is OptionalDescriptor.Reflective<*> -> {}
+            is OptionalDescriptor.JavaReflective<*> -> {}
+            is ArrayDescriptor.Reflective<*, *> -> {}
             is StructDescriptor.Reflective<*, *> -> {}
             is EnumDescriptor.Reflective<*> -> {}
         }
 
         when (field.type) {
-            is PrimitiveDescriptor -> {}
-            is OptionalDescriptor.Reflective -> {}
-            is ArrayDescriptor.Reflective -> {}
-            is RecordDescriptor.Reflective<*> -> {}
+            is PrimitiveDescriptor.Reflective<*> -> {}
+            is OptionalDescriptor.Reflective<*> -> {}
+            is OptionalDescriptor.JavaReflective<*> -> {}
+            is ArrayDescriptor.Reflective<*, *> -> {}
+            is RecordDescriptor.Reflective<*, *> -> {}
         }
 
         when (TypeDescriptor.parseFromJsonCode(expectedJson)) {
