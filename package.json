@@ -1,11 +1,11 @@
 {
-  "name": "soia-kotlin-gen",
-  "version": "1.0.5",
+  "name": "skir-kotlin-gen",
+  "version": "0.0.1",
   "description": "",
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gepheum/soia-kotlin-gen.git"
+    "url": "git+https://github.com/gepheum/skir-kotlin-gen.git"
   },
   "license": "ISC",
   "author": "Tyler Fibonacci <gepheum@gmail.com>",
@@ -22,15 +22,19 @@
   ],
   "scripts": {
     "build": "tsc",
-    "format-soia": "cd e2e-test && soiac --fmt fix && cd ..",
-    "format-soia:check": "cd e2e-test && soiac --fmt check && cd ..",
+    "format-skir": "cd e2e-test && skir format fix && cd ..",
+    "format-skir:check": "cd e2e-test && skir format check && cd ..",
     "format-kotlin": "cd e2e-test && ./gradlew ktlintFormat && cd ..",
     "format-kotlin:check": "cd e2e-test && ./gradlew ktlintCheck && cd ..",
-    "format": "prettier --write \"**/*.ts\" && npm run format-soia && npm run format-kotlin",
-    "format:check": "prettier --check \"**/*.ts\" && npm run format-soia:check && npm run format-kotlin:check",
-    "test": "npm run build && cd e2e-test && soiac -r . && ./gradlew test && cd ..",
+    "format": "prettier --write \"**/*.ts\" && npm run format-skir && npm run format-kotlin",
+    "format:check": "prettier --check \"**/*.ts\" && npm run format-skir:check && npm run format-kotlin:check",
+    "test": "npm run build && cd e2e-test && skir gen && ./gradlew test && cd ..",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
+  },
+  "dependencies": {
+    "skir-internal": "^0.0.6",
+    "zod": "^4.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
@@ -39,7 +43,7 @@
     "eslint": "^8.54.0",
     "prettier": "^3.2.4",
     "prettier-plugin-organize-imports": "^4.2.0",
-    "soiac": "^1.0.51",
+    "skir": "^0.0.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }

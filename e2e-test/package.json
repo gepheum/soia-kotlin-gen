@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "soiac": "soiac"
+    "skirc": "skirc"
   },
   "devDependencies": {
-    "soiac": "^1.0.17"
+    "skirc": "^1.0.17"
   }
 }

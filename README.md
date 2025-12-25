@@ -1,49 +1,49 @@
-[![npm](https://img.shields.io/npm/v/soia-kotlin-gen)](https://www.npmjs.com/package/soia-kotlin-gen)
-[![build](https://github.com/gepheum/soia-kotlin-gen/workflows/Build/badge.svg)](https://github.com/gepheum/soia-kotlin-gen/actions)
+[![npm](https://img.shields.io/npm/v/skir-kotlin-gen)](https://www.npmjs.com/package/skir-kotlin-gen)
+[![build](https://github.com/gepheum/skir-kotlin-gen/workflows/Build/badge.svg)](https://github.com/gepheum/skir-kotlin-gen/actions)
 
 # Soia's Kotlin code generator
 
-Official plugin for generating Kotlin code from [.soia](https://github.com/gepheum/soia) files.
+Official plugin for generating Kotlin code from [.skir](https://github.com/gepheum/skir) files.
 
 ## Installation
 
-From your project's root directory, run `npm i --save-dev soia-kotlin-gen`.
+From your project's root directory, run `npm i --save-dev skir-kotlin-gen`.
 
-In your `soia.yml` file, add the following snippet under `generators`:
+In your `skir.yml` file, add the following snippet under `generators`:
 ```yaml
-  - mod: soia-kotlin-gen
+  - mod: skir-kotlin-gen
     config: {}
 ```
 
-The `npm run soiac` command will now generate .kt files within the `soiagen` directory.
+The `npm run skirc` command will now generate .kt files within the `skirout` directory.
 
-The generated Kotlin code has a runtime dependency on `land.soia:soia-kotlin-client`. Add this line to your `build.gradle.kts` file in the `dependencies` section:
+The generated Kotlin code has a runtime dependency on `build.skir:skir-client`. Add this line to your `build.gradle.kts` file in the `dependencies` section:
 
 ```kotlin
-implementation("land.soia:soia-kotlin-client:1.1.4")  // Pick the latest version
+implementation("build.skir:skir-client:1.1.4")  // Pick the latest version
 ```
 
-For more information, see this Kotlin project [example](https://github.com/gepheum/soia-kotlin-example).
+For more information, see this Kotlin project [example](https://github.com/gepheum/skir-kotlin-example).
 
 ## Kotlin generated code guide
 
-The examples below are for the code generated from [this](https://github.com/gepheum/soia-kotlin-example/blob/main/soia-src/user.soia) .soia file.
+The examples below are for the code generated from [this](https://github.com/gepheum/skir-kotlin-example/blob/main/skir-src/user.skir) .skir file.
 
 ### Referring to generated symbols
 
 ```kotlin
-// Import the given symbols from the Kotlin module generated from "user.soia"
-import soiagen.user.User
-import soiagen.user.UserRegistry
-import soiagen.user.SubscriptionStatus
-import soiagen.user.TARZAN
+// Import the given symbols from the Kotlin module generated from "user.skir"
+import skirout.user.User
+import skirout.user.UserRegistry
+import skirout.user.SubscriptionStatus
+import skirout.user.TARZAN
 
 // Now you can use: TARZAN, User, UserRegistry, SubscriptionStatus, etc.
 ```
 
 ### Frozen struct classes
 
-For every struct S in the .soia file, soia generates a frozen (deeply immutable) class `S` and a mutable class `S.Mutable`.
+For every struct S in the .skir file, skir generates a frozen (deeply immutable) class `S` and a mutable class `S.Mutable`.
 
 ```kotlin
 // Construct a frozen User.
@@ -197,13 +197,13 @@ greet(lyla)
 
 ### Enum classes
 
-Soia generates a deeply immutable Kotlin class for every enum in the .soia file. This class is *not* a Kotlin enum, although the syntax for referring to constants is similar.
+Soia generates a deeply immutable Kotlin class for every enum in the .skir file. This class is *not* a Kotlin enum, although the syntax for referring to constants is similar.
 
 ```kotlin
 val someStatuses =
     listOf(
         // The UNKNOWN constant is present in all Soia enums even if it is not
-        // declared in the .soia file.
+        // declared in the .skir file.
         SubscriptionStatus.UNKNOWN,
         SubscriptionStatus.FREE,
         SubscriptionStatus.PREMIUM,
@@ -350,14 +350,14 @@ println(TARZAN)
 ### Keyed lists
 
 ```kotlin
-// In the .soia file:
+// In the .skir file:
 //   struct UserRegistry {
 //     users: [User|user_id];
 //   }
 
 val userRegistry = UserRegistry(users = listOf(john, jane, evilJohn))
 
-// find() returns the user with the given key (specified in the .soia file).
+// find() returns the user with the given key (specified in the .skir file).
 // In this example, the key is the user id.
 // The first lookup runs in O(N) time, and the following lookups run in O(1)
 // time.
@@ -403,17 +403,17 @@ assert(jack.pets === jade.pets)
 
 ### Soia services
 
-#### Starting a soia service on an HTTP server
+#### Starting a skir service on an HTTP server
 
-Full example [here](https://github.com/gepheum/soia-kotlin-example/blob/main/src/main/kotlin/examples/startservice/StartService.kt).
+Full example [here](https://github.com/gepheum/skir-kotlin-example/blob/main/src/main/kotlin/examples/startservice/StartService.kt).
 
-#### Sending RPCs to a soia service
+#### Sending RPCs to a skir service
 
-Full example [here](https://github.com/gepheum/soia-kotlin-example/blob/main/src/main/kotlin/examples/callservice/CallService.kt).
+Full example [here](https://github.com/gepheum/skir-kotlin-example/blob/main/src/main/kotlin/examples/callservice/CallService.kt).
 
 ### Reflection
 
-Reflection allows you to inspect a soia type at runtime.
+Reflection allows you to inspect a skir type at runtime.
 
 ```kotlin
 println(
@@ -436,7 +436,7 @@ assert((typeDescriptor as StructDescriptor).fields.size == 5)
 // The 'allStringsToUpperCase' function uses reflection to convert all the
 // strings contained in a given Soia value to upper case.
 // See the implementation at
-// https://github.com/gepheum/soia-kotlin-example/blob/main/src/main/kotlin/AllStringsToUpperCase.kt
+// https://github.com/gepheum/skir-kotlin-example/blob/main/src/main/kotlin/AllStringsToUpperCase.kt
 println(allStringsToUpperCase(TARZAN, User.typeDescriptor))
 // User(
 // userId = 123,
@@ -466,4 +466,4 @@ While Java and Kotlin code can interoperate seamlessly, Soia provides separate c
 
 Although it's technically feasible to use Kotlin-generated code in a Java project (or vice versa), doing so results in an API that feels unnatural and cumbersome in the calling language. For the best developer experience, use the code generator that matches your project's primary language.
 
-Note that both the Java and Kotlin generated code share the same runtime dependency: `land.soia:soia-kotlin-client`.
+Note that both the Java and Kotlin generated code share the same runtime dependency: `build.skir:skir-client`.

@@ -9,7 +9,7 @@ import {
   type ResolvedType,
   convertCase,
   simpleHash,
-} from "soiac";
+} from "skir-internal";
 import { z } from "zod";
 import { Namer, toEnumConstantName } from "./naming.js";
 import { TypeSpeller } from "./type_speller.js";
@@ -33,7 +33,7 @@ class KotlinCodeGenerator implements CodeGenerator<Config> {
     const outputFiles: CodeGenerator.OutputFile[] = [];
     for (const module of input.modules) {
       outputFiles.push({
-        path: module.path.replace(/\.soia$/, ".kt"),
+        path: module.path.replace(/\.skir$/, ".kt"),
         code: new KotlinSourceFileGenerator(
           module,
           recordMap,
@@ -71,16 +71,16 @@ class KotlinSourceFileGenerator {
       //
 
       // To install the Soia client library, add:
-      //   implementation("land.soia:soia-kotlin-client:latest.release")
+      //   implementation("build.skir:skir-client:latest.release")
       // to your build.gradle.kts file
 
       `,
-      `package ${this.packagePrefix}soiagen.`,
-      this.inModule.path.replace(/\.soia$/, "").replace("/", "."),
+      `package ${this.packagePrefix}skirout.`,
+      this.inModule.path.replace(/\.skir$/, "").replace("/", "."),
       ";\n\n",
-      "import land.soia.internal.MustNameArguments as _MustNameArguments;\n",
-      "import land.soia.internal.UnrecognizedFields as _UnrecognizedFields;\n\n",
-      "import land.soia.internal.UnrecognizedEnum as _UnrecognizedEnum;\n\n",
+      "import build.skir.internal.MustNameArguments as _MustNameArguments;\n",
+      "import build.skir.internal.UnrecognizedFields as _UnrecognizedFields;\n",
+      "import build.skir.internal.UnrecognizedVariant as _UnrecognizedVariant;\n\n",
     );
 
     this.writeClassesForRecords(
@@ -233,7 +233,7 @@ class KotlinSourceFileGenerator {
       ").hashCode();\n",
       "}\n\n",
       "override fun toString(): kotlin.String {\n",
-      "return land.soia.internal.toStringImpl(\n",
+      "return build.skir.internal.toStringImpl(\n",
       "this,\n",
       `${qualifiedName}.serializerImpl,\n`,
       ")\n",
@@ -303,15 +303,16 @@ class KotlinSourceFileGenerator {
     this.push(
       "_unrecognizedFields = null,\n",
       ");\n\n",
-      "private val serializerImpl = land.soia.internal.StructSerializer(\n",
+      "private val serializerImpl = build.skir.internal.StructSerializer(\n",
       `recordId = "${getRecordId(struct)}",\n`,
+      `doc = ${toKotlinStringLiteral(struct.record.doc.text)},\n`,
       "defaultInstance = default,\n",
       "newMutableFn = { it?.toMutable() ?: Mutable() },\n",
       "toFrozenFn = { it.toFrozen() },\n",
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
       ");\n\n",
-      "val serializer = land.soia.internal.makeSerializer(serializerImpl);\n\n",
+      "val serializer = build.skir.internal.makeSerializer(serializerImpl);\n\n",
       "val typeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
@@ -323,6 +324,7 @@ class KotlinSourceFileGenerator {
         `"${fieldName}",\n`,
         `${field.number},\n`,
         `${typeSpeller.getSerializerExpression(field.type!)},\n`,
+        `${toKotlinStringLiteral(field.doc.text)},\n`,
         `{ it.${fieldName} },\n`,
         `{ mut, v -> mut.${fieldName} = v },\n`,
         ");\n",
@@ -351,17 +353,16 @@ class KotlinSourceFileGenerator {
       const type = field.type!;
       const fieldName = namer.structFieldToKotlinName(field);
       const mutableGetterName =
-        "mutable" +
-        convertCase(field.name.text, "lower_underscore", "UpperCamel");
+        "mutable" + convertCase(field.name.text, "UpperCamel");
       const mutableType = typeSpeller.getKotlinType(field.type!, "mutable");
       const accessor = `this.${fieldName}`;
       let bodyLines: string[] = [];
       if (type.kind === "array") {
         bodyLines = [
           "return when (value) {\n",
-          "is land.soia.internal.MutableList -> value;\n",
+          "is build.skir.internal.MutableList -> value;\n",
           "else -> {\n",
-          "value = land.soia.internal.MutableList(value);\n",
+          "value = build.skir.internal.MutableList(value);\n",
           `${accessor} = value;\n`,
           "value;\n",
           "}\n",
@@ -400,8 +401,8 @@ class KotlinSourceFileGenerator {
     const { namer, typeSpeller } = this;
     const { recordMap } = typeSpeller;
     const { fields } = record.record;
-    const constantFields = fields.filter((f) => !f.type);
-    const wrapperFields = fields.filter((f) => f.type);
+    const constantVariants = fields.filter((f) => !f.type);
+    const wrapperVariants = fields.filter((f) => f.type);
     const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(
@@ -409,12 +410,12 @@ class KotlinSourceFileGenerator {
       "enum class Kind {\n", //
       "UNKNOWN,\n",
     );
-    for (const field of constantFields) {
+    for (const field of constantVariants) {
       this.push(`${field.name.text}_CONST,\n`);
     }
-    for (const field of wrapperFields) {
+    for (const field of wrapperVariants) {
       this.push(
-        convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE"),
+        convertCase(field.name.text, "UPPER_UNDERSCORE"),
         "_WRAPPER,\n",
       );
     }
@@ -423,7 +424,7 @@ class KotlinSourceFileGenerator {
       'class Unknown @kotlin.Deprecated("For internal use", kotlin.ReplaceWith("',
       qualifiedName,
       '.UNKNOWN")) internal constructor(\n',
-      `internal val _unrecognized: _UnrecognizedEnum<${qualifiedName}>?,\n`,
+      `internal val _unrecognized: _UnrecognizedVariant<${qualifiedName}>?,\n`,
       `) : ${qualifiedName}() {\n`,
       "override val kind get() = Kind.UNKNOWN;\n\n",
       "override fun equals(other: kotlin.Any?): kotlin.Boolean {\n",
@@ -434,7 +435,7 @@ class KotlinSourceFileGenerator {
       "}\n\n",
       "}\n\n", // class Unknown
     );
-    for (const constField of constantFields) {
+    for (const constField of constantVariants) {
       const kindExpr = `Kind.${constField.name.text}_CONST`;
       const constantName = toEnumConstantName(constField);
       this.push(
@@ -446,11 +447,10 @@ class KotlinSourceFileGenerator {
         `}\n\n`, // object
       );
     }
-    for (const wrapperField of wrapperFields) {
+    for (const wrapperField of wrapperVariants) {
       const valueType = wrapperField.type!;
       const wrapperClassName =
-        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
-        "Wrapper";
+        convertCase(wrapperField.name.text, "UpperCamel") + "Wrapper";
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
         .toString();
@@ -476,11 +476,7 @@ class KotlinSourceFileGenerator {
       }
       const kindExpr =
         "Kind." +
-        convertCase(
-          wrapperField.name.text,
-          "lower_underscore",
-          "UPPER_UNDERSCORE",
-        ) +
+        convertCase(wrapperField.name.text, "UPPER_UNDERSCORE") +
         "_WRAPPER";
       this.push(
         `override val kind get() = ${kindExpr};\n\n`,
@@ -499,7 +495,7 @@ class KotlinSourceFileGenerator {
     this.push(
       "abstract val kind: Kind;\n\n",
       "override fun toString(): kotlin.String {\n",
-      "return land.soia.internal.toStringImpl(\n",
+      "return build.skir.internal.toStringImpl(\n",
       "this,\n",
       `${qualifiedName}._serializerImpl,\n`,
       ")\n",
@@ -507,7 +503,7 @@ class KotlinSourceFileGenerator {
       "companion object {\n",
       'val UNKNOWN = @kotlin.Suppress("DEPRECATION") Unknown(null);\n\n',
     );
-    for (const wrapperField of wrapperFields) {
+    for (const wrapperField of wrapperVariants) {
       const type = wrapperField.type!;
       if (type.kind !== "record") {
         continue;
@@ -519,11 +515,9 @@ class KotlinSourceFileGenerator {
       }
       const structClassName = namer.getClassName(structLocation);
       const createFunName =
-        "create" +
-        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel");
+        "create" + convertCase(wrapperField.name.text, "UpperCamel");
       const wrapperClassName =
-        convertCase(wrapperField.name.text, "lower_underscore", "UpperCamel") +
-        "Wrapper";
+        convertCase(wrapperField.name.text, "UpperCamel") + "Wrapper";
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
         `fun ${createFunName}(\n`,
@@ -546,19 +540,20 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       "private val _serializerImpl =\n",
-      `land.soia.internal.EnumSerializer.create<${qualifiedName}, Unknown>(\n`,
+      `build.skir.internal.EnumSerializer.create<${qualifiedName}, Unknown>(\n`,
       `recordId = "${getRecordId(record)}",\n`,
+      `doc = ${toKotlinStringLiteral(record.record.doc.text)},\n`,
       "getKindOrdinal = { it.kind.ordinal },\n",
       "kindCount = Kind.values().size,\n",
       "unknownInstance = UNKNOWN,\n",
       'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
       ";\n\n",
-      "val serializer = land.soia.internal.makeSerializer(_serializerImpl);\n\n",
+      "val serializer = build.skir.internal.makeSerializer(_serializerImpl);\n\n",
       "val typeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
-    for (const constField of constantFields) {
+    for (const constField of constantVariants) {
       this.push(toEnumConstantName(constField), ";\n");
     }
     this.push("_maybeFinalizeSerializer();\n");
@@ -567,34 +562,34 @@ class KotlinSourceFileGenerator {
       `private var _finalizationCounter = 0;\n\n`,
       "private fun _maybeFinalizeSerializer() {\n",
       "_finalizationCounter += 1;\n",
-      `if (_finalizationCounter == ${constantFields.length + 1}) {\n`,
+      `if (_finalizationCounter == ${constantVariants.length + 1}) {\n`,
     );
-    for (const field of constantFields) {
+    for (const variant of constantVariants) {
       this.push(
-        "_serializerImpl.addConstantField(\n",
-        `${field.number},\n`,
-        `"${field.name.text}",\n`,
-        `Kind.${field.name.text}_CONST.ordinal,\n`,
-        `${toEnumConstantName(field)},\n`,
+        "_serializerImpl.addConstantVariant(\n",
+        `${variant.number},\n`,
+        `"${variant.name.text}",\n`,
+        `Kind.${variant.name.text}_CONST.ordinal,\n`,
+        `${toKotlinStringLiteral(variant.doc.text)},\n`,
+        `${toEnumConstantName(variant)},\n`,
         ");\n",
       );
     }
-    for (const field of wrapperFields) {
+    for (const variant of wrapperVariants) {
       const serializerExpression = typeSpeller.getSerializerExpression(
-        field.type!,
+        variant.type!,
       );
       const wrapperClassName =
-        convertCase(field.name.text, "lower_underscore", "UpperCamel") +
-        "Wrapper";
+        convertCase(variant.name.text, "UpperCamel") + "Wrapper";
       const kindConstName =
-        convertCase(field.name.text, "lower_underscore", "UPPER_UNDERSCORE") +
-        "_WRAPPER";
+        convertCase(variant.name.text, "UPPER_UNDERSCORE") + "_WRAPPER";
       this.push(
-        "_serializerImpl.addWrapperField(\n",
-        `${field.number},\n`,
-        `"${field.name.text}",\n`,
+        "_serializerImpl.addWrapperVariant(\n",
+        `${variant.number},\n`,
+        `"${variant.name.text}",\n`,
         `Kind.${kindConstName}.ordinal,\n`,
         `${serializerExpression},\n`,
+        `${toKotlinStringLiteral(variant.doc.text)},\n`,
         `{ ${wrapperClassName}(it) },\n`,
         ") { it.value };\n",
       );
@@ -635,12 +630,13 @@ class KotlinSourceFileGenerator {
       method.responseType!,
     );
     this.push(
-      `val ${methodName}: land.soia.service.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
-      "land.soia.service.Method(\n",
+      `val ${methodName}: build.skir.service.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
+      "build.skir.service.Method(\n",
       `"${methodName}",\n`,
       `${method.number},\n`,
       requestSerializerExpr + ",\n",
       responseSerializerExpr + ",\n",
+      toKotlinStringLiteral(method.doc.text) + ",\n",
       ")\n",
       "}\n\n",
     );
@@ -744,9 +740,9 @@ class KotlinSourceFileGenerator {
           if (keyType.kind === "record") {
             kotlinKeyType += ".Kind";
           }
-          return `land.soia.internal.emptyKeyedList<${itemType}, ${kotlinKeyType}>()`;
+          return `build.skir.internal.emptyKeyedList<${itemType}, ${kotlinKeyType}>()`;
         } else {
-          return `land.soia.internal.emptyFrozenList<${itemType}>()`;
+          return `build.skir.internal.emptyFrozenList<${itemType}>()`;
         }
       }
       case "optional": {
@@ -781,15 +777,15 @@ class KotlinSourceFileGenerator {
             .map((f) => namer.structFieldToKotlinName(f.name.text))
             .join(".");
           if (itemToFrozenExpr === "it") {
-            return `land.soia.internal.toKeyedList(${inputExpr}, "${path}", { it.${path} })`;
+            return `build.skir.internal.toKeyedList(${inputExpr}, "${path}", { it.${path} })`;
           } else {
-            return `land.soia.internal.toKeyedList(${inputExpr}, "${path}", { it.${path} }, { ${itemToFrozenExpr} })`;
+            return `build.skir.internal.toKeyedList(${inputExpr}, "${path}", { it.${path} }, { ${itemToFrozenExpr} })`;
           }
         } else {
           if (itemToFrozenExpr === "it") {
-            return `land.soia.internal.toFrozenList(${inputExpr})`;
+            return `build.skir.internal.toFrozenList(${inputExpr})`;
           } else {
-            return `land.soia.internal.toFrozenList(${inputExpr}, { ${itemToFrozenExpr} })`;
+            return `build.skir.internal.toFrozenList(${inputExpr}, { ${itemToFrozenExpr} })`;
           }
         }
       }
@@ -930,6 +926,21 @@ function getRecordId(struct: RecordLocation): string {
     .map((r) => r.name.text)
     .join(".");
   return `${modulePath}:${qualifiedRecordName}`;
+}
+
+function toKotlinStringLiteral(input: string): string {
+  // Escape special characters for Kotlin string literals
+  const escaped = input
+    .replace(/\\/g, "\\\\") // Escape backslashes
+    .replace(/"/g, '\\"') // Escape double quotes
+    .replace(/\n/g, "\\n") // Escape newlines
+    .replace(/\r/g, "\\r") // Escape carriage returns
+    .replace(/\t/g, "\\t") // Escape tabs
+    .replace(/\$/g, "\\$"); // Escape $ to prevent unwanted interpolation
+
+  return `"${escaped}"`;
+
+  return `"${escaped}"`;
 }
 
 export const GENERATOR = new KotlinCodeGenerator();

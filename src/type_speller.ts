@@ -1,4 +1,4 @@
-import type { RecordKey, RecordLocation, ResolvedType } from "soiac";
+import type { RecordKey, RecordLocation, ResolvedType } from "skir-internal";
 import { ClassName, Namer } from "./naming.js";
 
 export type TypeFlavor =
@@ -9,7 +9,7 @@ export type TypeFlavor =
   | "kind";
 
 /**
- * Transforms a type found in a `.soia` file into a Kotlin type.
+ * Transforms a type found in a `.skir` file into a Kotlin type.
  *
  * The flavors are:
  *   · initializer
@@ -22,7 +22,7 @@ export type TypeFlavor =
  *       Type union of the frozen type and the mutable type. All the fields of a
  *       mutable class are maybe-mutable.
  *   · mutable:
- *       A mutable value. Not all types found in `.soia` files support this, e.g.
+ *       A mutable value. Not all types found in `.skir` files support this, e.g.
  *       strings and numbers are always immutable.
  */
 export class TypeSpeller {
@@ -103,7 +103,7 @@ export class TypeSpeller {
             if (keyType.kind === "record") {
               kotlinKeyType += ".Kind";
             }
-            return `land.soia.KeyedList<${itemType}, ${kotlinKeyType}>`;
+            return `build.skir.KeyedList<${itemType}, ${kotlinKeyType}>`;
           } else {
             return `kotlin.collections.List<${itemType}>`;
           }
@@ -170,23 +170,23 @@ export class TypeSpeller {
       case "primitive": {
         switch (type.primitive) {
           case "bool":
-            return "land.soia.Serializers.bool";
+            return "build.skir.Serializers.bool";
           case "int32":
-            return "land.soia.Serializers.int32";
+            return "build.skir.Serializers.int32";
           case "int64":
-            return "land.soia.Serializers.int64";
+            return "build.skir.Serializers.int64";
           case "uint64":
-            return "land.soia.Serializers.uint64";
+            return "build.skir.Serializers.uint64";
           case "float32":
-            return "land.soia.Serializers.float32";
+            return "build.skir.Serializers.float32";
           case "float64":
-            return "land.soia.Serializers.float64";
+            return "build.skir.Serializers.float64";
           case "timestamp":
-            return "land.soia.Serializers.timestamp";
+            return "build.skir.Serializers.timestamp";
           case "string":
-            return "land.soia.Serializers.string";
+            return "build.skir.Serializers.string";
           case "bytes":
-            return "land.soia.Serializers.bytes";
+            return "build.skir.Serializers.bytes";
         }
         const _: never = type.primitive;
         throw TypeError();
@@ -198,13 +198,13 @@ export class TypeSpeller {
             .map((f) => this.namer.structFieldToKotlinName(f.name.text))
             .join(".");
           return (
-            "land.soia.internal.keyedListSerializer(\n" +
+            "build.skir.internal.keyedListSerializer(\n" +
             this.getSerializerExpression(type.item) +
             `,\n"${keyChain}",\n{ it.${path} },\n)`
           );
         } else {
           return (
-            "land.soia.Serializers.list(\n" +
+            "build.skir.Serializers.list(\n" +
             this.getSerializerExpression(type.item) +
             ",\n)"
           );
@@ -212,7 +212,7 @@ export class TypeSpeller {
       }
       case "optional": {
         return (
-          `land.soia.Serializers.optional(\n` +
+          `build.skir.Serializers.optional(\n` +
           this.getSerializerExpression(type.other) +
           `,\n)`
         );

@@ -1,22 +1,22 @@
-import land.soia.JsonFlavor
-import land.soia.Serializer
-import land.soia.Serializers
-import land.soia.UnrecognizedFieldsPolicy
-import land.soia.reflection.TypeDescriptor
+import build.skir.JsonFlavor
+import build.skir.Serializer
+import build.skir.Serializers
+import build.skir.UnrecognizedValuesPolicy
+import build.skir.reflection.TypeDescriptor
 import okio.ByteString
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
-import soiagen.goldens.Assertion
-import soiagen.goldens.BytesExpression
-import soiagen.goldens.Color
-import soiagen.goldens.KeyedArrays
-import soiagen.goldens.MyEnum
-import soiagen.goldens.Point
-import soiagen.goldens.RecEnum
-import soiagen.goldens.RecStruct
-import soiagen.goldens.StringExpression
-import soiagen.goldens.TypedValue
-import soiagen.goldens.UNIT_TESTS
+import skirout.goldens.Assertion
+import skirout.goldens.BytesExpression
+import skirout.goldens.Color
+import skirout.goldens.KeyedArrays
+import skirout.goldens.MyEnum
+import skirout.goldens.Point
+import skirout.goldens.RecEnum
+import skirout.goldens.RecStruct
+import skirout.goldens.StringExpression
+import skirout.goldens.TypedValue
+import skirout.goldens.UNIT_TESTS
 
 class AssertionError(
     override val message: String,
@@ -174,7 +174,7 @@ class GoldensTests {
         for (expectedBytes in input.expectedBytes) {
             val expectedBytesList = expectedBytes.toByteArray()
             val buffer = ByteArray(expectedBytesList.size + 2)
-            val prefix = "soia"
+            val prefix = "skir"
             prefix.toByteArray().copyInto(buffer, 0)
             buffer[4] = 248.toByte()
             expectedBytesList.copyInto(buffer, 5, prefix.length)
@@ -702,7 +702,7 @@ class GoldensTests {
         json: String,
     ): T {
         return try {
-            serializer.fromJsonCode(json, UnrecognizedFieldsPolicy.KEEP)
+            serializer.fromJsonCode(json, UnrecognizedValuesPolicy.KEEP)
         } catch (e: Exception) {
             throw AssertionError(message = "Failed to deserialize $json: $e")
         }
@@ -735,7 +735,7 @@ class GoldensTests {
         bytes: ByteString,
     ): T {
         return try {
-            serializer.fromBytes(bytes.toByteArray(), UnrecognizedFieldsPolicy.KEEP)
+            serializer.fromBytes(bytes.toByteArray(), UnrecognizedValuesPolicy.KEEP)
         } catch (e: Exception) {
             throw AssertionError(message = "Failed to deserialize ${bytes.hex()}: $e")
         }

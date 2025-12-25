@@ -1,16 +1,16 @@
-package land.soia
+package build.skir
 
+import build.skir.reflection.ArrayDescriptor
+import build.skir.reflection.EnumConstantVariant
+import build.skir.reflection.EnumDescriptor
+import build.skir.reflection.EnumWrapperVariant
+import build.skir.reflection.OptionalDescriptor
+import build.skir.reflection.PrimitiveDescriptor
+import build.skir.reflection.RecordDescriptor
+import build.skir.reflection.StructDescriptor
+import build.skir.reflection.TypeDescriptor
+import build.skir.service.Service
 import com.google.common.truth.Truth.assertThat
-import land.soia.reflection.ArrayDescriptor
-import land.soia.reflection.EnumConstantField
-import land.soia.reflection.EnumDescriptor
-import land.soia.reflection.EnumWrapperField
-import land.soia.reflection.OptionalDescriptor
-import land.soia.reflection.PrimitiveDescriptor
-import land.soia.reflection.RecordDescriptor
-import land.soia.reflection.StructDescriptor
-import land.soia.reflection.TypeDescriptor
-import land.soia.service.Service
 import org.junit.jupiter.api.Test
 import java.net.http.HttpHeaders
 import java.time.Instant
@@ -19,7 +19,7 @@ class Tests {
     @Test
     fun `test generated struct - toString()`() {
         assertThat(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ).toString(),
@@ -30,7 +30,7 @@ class Tests {
                 ")",
         )
         assertThat(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "",
             ).toString(),
@@ -40,23 +40,23 @@ class Tests {
                 ")",
         )
         assertThat(
-            soiagen.full_name.FullName.partial().toString(),
+            skirout.full_name.FullName.partial().toString(),
         ).isEqualTo(
             "FullName.partial()",
         )
         assertThat(
-            soiagen.structs.Triangle(
+            skirout.structs.Triangle(
                 color =
-                    soiagen.structs.Color(
+                    skirout.structs.Color(
                         r = 127,
                         g = 128,
                         b = 139,
                     ),
                 points =
                     listOf(
-                        soiagen.structs.Point(x = 0, y = 0),
-                        soiagen.structs.Point(x = 10, y = 0),
-                        soiagen.structs.Point(x = 0, y = 20),
+                        skirout.structs.Point(x = 0, y = 0),
+                        skirout.structs.Point(x = 10, y = 0),
+                        skirout.structs.Point(x = 0, y = 20),
                     ),
             ).toString(),
         ).isEqualTo(
@@ -82,23 +82,23 @@ class Tests {
     @Test
     fun `test generated struct - equals()`() {
         assertThat(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ),
         ).isEqualTo(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ),
         )
         assertThat(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "",
             ),
         ).isNotEqualTo(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ),
@@ -107,27 +107,27 @@ class Tests {
 
     @Test
     fun `test generated struct - hashCode()`() {
-        val set = mutableSetOf<soiagen.full_name.FullName>()
+        val set = mutableSetOf<skirout.full_name.FullName>()
         set.add(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ),
         )
         set.add(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "",
                 lastName = "Doe",
             ),
         )
         set.add(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "",
             ),
         )
         set.add(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             ),
@@ -138,7 +138,7 @@ class Tests {
     @Test
     fun `test generated struct - partial static factory method`() {
         val fullName =
-            soiagen.full_name.FullName.partial(
+            skirout.full_name.FullName.partial(
                 firstName = "John",
             )
         assertThat(fullName.firstName).isEqualTo("John")
@@ -148,7 +148,7 @@ class Tests {
     @Test
     fun `test generated struct - toMutable()`() {
         val fullName =
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             )
@@ -157,7 +157,7 @@ class Tests {
         assertThat(
             mutableFullName.toFrozen(),
         ).isEqualTo(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "Jane",
                 lastName = "Doe",
             ),
@@ -167,7 +167,7 @@ class Tests {
     @Test
     fun `test generated struct - toFrozen() returns this`() {
         val fullName =
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             )
@@ -178,14 +178,14 @@ class Tests {
     @Test
     fun `test generated struct - copy()`() {
         val fullName =
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             )
         assertThat(
             fullName.copy(firstName = "Jane"),
         ).isEqualTo(
-            soiagen.full_name.FullName(
+            skirout.full_name.FullName(
                 firstName = "Jane",
                 lastName = "Doe",
             ),
@@ -194,34 +194,34 @@ class Tests {
         assertThat(fullName.copy()).isSameInstanceAs(fullName)
 
         assertThat(
-            soiagen.structs.Triangle(
+            skirout.structs.Triangle(
                 color =
-                    soiagen.structs.Color(
+                    skirout.structs.Color(
                         r = 127,
                         g = 128,
                         b = 139,
                     ),
                 points =
                     listOf(
-                        soiagen.structs.Point.Mutable(x = 1, y = 2),
+                        skirout.structs.Point.Mutable(x = 1, y = 2),
                     ),
             ).copy(
                 color =
-                    soiagen.structs.Color.Mutable(
+                    skirout.structs.Color.Mutable(
                         r = 10,
                     ),
             ),
         ).isEqualTo(
-            soiagen.structs.Triangle(
+            skirout.structs.Triangle(
                 color =
-                    soiagen.structs.Color(
+                    skirout.structs.Color(
                         r = 10,
                         g = 0,
                         b = 0,
                     ),
                 points =
                     listOf(
-                        soiagen.structs.Point(x = 1, y = 2),
+                        skirout.structs.Point(x = 1, y = 2),
                     ),
             ),
         )
@@ -230,18 +230,18 @@ class Tests {
     @Test
     fun `test generated struct - mutable getter`() {
         val triangle =
-            soiagen.structs.Triangle(
+            skirout.structs.Triangle(
                 color =
-                    soiagen.structs.Color(
+                    skirout.structs.Color(
                         r = 127,
                         g = 128,
                         b = 139,
                     ),
                 points =
                     listOf(
-                        soiagen.structs.Point(x = 0, y = 0),
-                        soiagen.structs.Point(x = 10, y = 0),
-                        soiagen.structs.Point(x = 0, y = 20),
+                        skirout.structs.Point(x = 0, y = 0),
+                        skirout.structs.Point(x = 10, y = 0),
+                        skirout.structs.Point(x = 0, y = 20),
                     ),
             )
         val mutableTriangle = triangle.toMutable()
@@ -252,7 +252,7 @@ class Tests {
         assertThat(
             mutableTriangle.toFrozen().color,
         ).isEqualTo(
-            soiagen.structs.Color(
+            skirout.structs.Color(
                 r = 5,
                 g = 128,
                 b = 139,
@@ -260,30 +260,30 @@ class Tests {
         )
         assertThat(mutableTriangle.toFrozen().points).isSameInstanceAs(triangle.points)
 
-        mutableTriangle.mutablePoints.add(soiagen.structs.Point.Mutable(x = 10, y = 10))
-        mutableTriangle.mutablePoints.add(soiagen.structs.Point.Mutable(x = 20, y = 20))
+        mutableTriangle.mutablePoints.add(skirout.structs.Point.Mutable(x = 10, y = 10))
+        mutableTriangle.mutablePoints.add(skirout.structs.Point.Mutable(x = 20, y = 20))
         assertThat(
             mutableTriangle.toFrozen().points,
         ).isEqualTo(
             listOf(
-                soiagen.structs.Point(x = 0, y = 0),
-                soiagen.structs.Point(x = 10, y = 0),
-                soiagen.structs.Point(x = 0, y = 20),
-                soiagen.structs.Point(x = 10, y = 10),
-                soiagen.structs.Point(x = 20, y = 20),
+                skirout.structs.Point(x = 0, y = 0),
+                skirout.structs.Point(x = 10, y = 0),
+                skirout.structs.Point(x = 0, y = 20),
+                skirout.structs.Point(x = 10, y = 10),
+                skirout.structs.Point(x = 20, y = 20),
             ),
         )
     }
 
     @Test
     fun `test generated struct - _OrMutable sealed interface`() {
-        val person: soiagen.full_name.FullName_OrMutable =
-            soiagen.full_name.FullName(
+        val person: skirout.full_name.FullName_OrMutable =
+            skirout.full_name.FullName(
                 firstName = "John",
                 lastName = "Doe",
             )
-        val mutablePerson: soiagen.full_name.FullName_OrMutable =
-            soiagen.full_name.FullName.Mutable(
+        val mutablePerson: skirout.full_name.FullName_OrMutable =
+            skirout.full_name.FullName.Mutable(
                 firstName = "John",
             )
         assertThat(
@@ -297,53 +297,53 @@ class Tests {
     @Test
     fun `test generated struct - reflection`() {
         assertThat(
-            soiagen.structs.Item.User.typeDescriptor.name,
+            skirout.structs.Item.User.typeDescriptor.name,
         ).isEqualTo(
             "User",
         )
         assertThat(
-            soiagen.structs.Item.User.typeDescriptor.qualifiedName,
+            skirout.structs.Item.User.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item.User",
         )
         assertThat(
-            soiagen.structs.Item.typeDescriptor.name,
+            skirout.structs.Item.typeDescriptor.name,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.structs.Item.typeDescriptor.qualifiedName,
+            skirout.structs.Item.typeDescriptor.qualifiedName,
         ).isEqualTo(
             "Item",
         )
         assertThat(
-            soiagen.vehicles.car.Car.typeDescriptor.modulePath,
+            skirout.vehicles.car.Car.typeDescriptor.modulePath,
         ).isEqualTo(
-            "vehicles/car.soia",
+            "vehicles/car.skir",
         )
 
         assertThat(
-            soiagen.structs.Color.typeDescriptor.removedNumbers,
+            skirout.structs.Color.typeDescriptor.removedNumbers,
         ).isEmpty()
         assertThat(
-            soiagen.structs.FullName.typeDescriptor.removedNumbers,
+            skirout.structs.FullName.typeDescriptor.removedNumbers,
         ).isEqualTo(
             setOf(1),
         )
 
-        val typeDescriptor = soiagen.vehicles.car.Car.typeDescriptor
+        val typeDescriptor = skirout.vehicles.car.Car.typeDescriptor
         assertThat(
             typeDescriptor.fields,
         ).hasSize(4)
         val field = typeDescriptor.getField("purchase_time")
         assertThat(field).isNotNull()
         @Suppress("UNCHECKED_CAST")
-        field as land.soia.reflection.StructField.Reflective<
-            soiagen.vehicles.car.Car,
-            soiagen.vehicles.car.Car.Mutable,
+        field as build.skir.reflection.StructField.Reflective<
+            skirout.vehicles.car.Car,
+            skirout.vehicles.car.Car.Mutable,
             Instant,
             >
-        val mutable: soiagen.vehicles.car.Car.Mutable =
+        val mutable: skirout.vehicles.car.Car.Mutable =
             typeDescriptor.newMutable(null)
         field.set(mutable, Instant.ofEpochMilli(1000))
         assertThat(
@@ -366,12 +366,12 @@ class Tests {
             "{\n" +
                 "  \"type\": {\n" +
                 "    \"kind\": \"record\",\n" +
-                "    \"value\": \"vehicles/car.soia:Car\"\n" +
+                "    \"value\": \"vehicles/car.skir:Car\"\n" +
                 "  },\n" +
                 "  \"records\": [\n" +
                 "    {\n" +
                 "      \"kind\": \"struct\",\n" +
-                "      \"id\": \"vehicles/car.soia:Car\",\n" +
+                "      \"id\": \"vehicles/car.skir:Car\",\n" +
                 "      \"fields\": [\n" +
                 "        {\n" +
                 "          \"name\": \"model\",\n" +
@@ -394,7 +394,7 @@ class Tests {
                 "          \"number\": 2,\n" +
                 "          \"type\": {\n" +
                 "            \"kind\": \"record\",\n" +
-                "            \"value\": \"user.soia:User\"\n" +
+                "            \"value\": \"user.skir:User\"\n" +
                 "          }\n" +
                 "        },\n" +
                 "        {\n" +
@@ -404,7 +404,7 @@ class Tests {
                 "            \"kind\": \"optional\",\n" +
                 "            \"value\": {\n" +
                 "              \"kind\": \"record\",\n" +
-                "              \"value\": \"user.soia:User\"\n" +
+                "              \"value\": \"user.skir:User\"\n" +
                 "            }\n" +
                 "          }\n" +
                 "        }\n" +
@@ -412,7 +412,7 @@ class Tests {
                 "    },\n" +
                 "    {\n" +
                 "      \"kind\": \"struct\",\n" +
-                "      \"id\": \"user.soia:User\",\n" +
+                "      \"id\": \"user.skir:User\",\n" +
                 "      \"fields\": [\n" +
                 "        {\n" +
                 "          \"name\": \"user_id\",\n" +
@@ -469,19 +469,19 @@ class Tests {
     @Test
     fun `test generated struct - recursive`() {
         val rec =
-            soiagen.structs.RecA.partial(
+            skirout.structs.RecA.partial(
                 a =
-                    soiagen.structs.RecA.partial(
-                        b = soiagen.structs.RecB.partial(),
+                    skirout.structs.RecA.partial(
+                        b = skirout.structs.RecB.partial(),
                     ),
             )
         assertThat(
             rec,
         ).isEqualTo(
-            soiagen.structs.RecA.partial(
+            skirout.structs.RecA.partial(
                 a =
-                    soiagen.structs.RecA.partial(
-                        b = soiagen.structs.RecB.partial(),
+                    skirout.structs.RecA.partial(
+                        b = skirout.structs.RecB.partial(),
                     ),
             ),
         )
@@ -495,28 +495,28 @@ class Tests {
     @Test
     fun `test keyed list - works`() {
         val items =
-            soiagen.structs.Items.partial(
+            skirout.structs.Items.partial(
                 arrayWithInt64Key =
                     listOf(
-                        soiagen.structs.Item.partial(
+                        skirout.structs.Item.partial(
                             int64 = 123,
                             string = "a123",
                         ),
-                        soiagen.structs.Item.partial(
+                        skirout.structs.Item.partial(
                             int64 = 234,
                             string = "a234",
                         ),
                     ),
             )
         assertThat(
-            soiagen.structs.Items.partial(arrayWithInt64Key = items.arrayWithInt64Key).arrayWithInt64Key,
+            skirout.structs.Items.partial(arrayWithInt64Key = items.arrayWithInt64Key).arrayWithInt64Key,
         ).isSameInstanceAs(
             items.arrayWithInt64Key,
         )
         assertThat(
             items.arrayWithInt64Key.mapView[123],
         ).isEqualTo(
-            soiagen.structs.Item.partial(
+            skirout.structs.Item.partial(
                 int64 = 123,
                 string = "a123",
             ),
@@ -529,17 +529,17 @@ class Tests {
     @Test
     fun `test keyed list - copy`() {
         val items =
-            soiagen.structs.Items.partial(
+            skirout.structs.Items.partial(
                 arrayWithStringKey =
                     listOf(
-                        soiagen.structs.Item.partial(
+                        skirout.structs.Item.partial(
                             string = "a123",
                             otherString = "b123",
                         ),
                     ),
                 arrayWithOtherStringKey =
                     listOf(
-                        soiagen.structs.Item.partial(
+                        skirout.structs.Item.partial(
                             string = "a234",
                             otherString = "b234",
                         ),
@@ -547,7 +547,7 @@ class Tests {
             )
 
         val firstCopy =
-            soiagen.structs.Items.partial(
+            skirout.structs.Items.partial(
                 arrayWithStringKey = items.arrayWithStringKey,
                 arrayWithOtherStringKey = items.arrayWithOtherStringKey,
             )
@@ -556,7 +556,7 @@ class Tests {
         assertThat(firstCopy.arrayWithOtherStringKey).isSameInstanceAs(items.arrayWithOtherStringKey)
 
         val secondCopy =
-            soiagen.structs.Items.partial(
+            skirout.structs.Items.partial(
                 arrayWithStringKey = items.arrayWithOtherStringKey,
                 arrayWithOtherStringKey = items.arrayWithStringKey,
             )
@@ -568,50 +568,50 @@ class Tests {
     @Test
     fun `test generated enum - obtaining instances`() {
         assertThat(
-            soiagen.enums.Status.UNKNOWN,
+            skirout.enums.Status.UNKNOWN,
         ).isInstanceOf(
-            soiagen.enums.Status::class.java,
+            skirout.enums.Status::class.java,
         )
         assertThat(
-            soiagen.enums.Status.OK,
+            skirout.enums.Status.OK,
         ).isInstanceOf(
-            soiagen.enums.Status::class.java,
+            skirout.enums.Status::class.java,
         )
         assertThat(
-            soiagen.enums.Status.ErrorWrapper(
-                soiagen.enums.Status.Error(
+            skirout.enums.Status.ErrorWrapper(
+                skirout.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
             ),
         ).isInstanceOf(
-            soiagen.enums.Status::class.java,
+            skirout.enums.Status::class.java,
         )
         assertThat(
-            soiagen.enums.Status.createError(
+            skirout.enums.Status.createError(
                 code = 100,
                 message = "The Message",
             ),
         ).isInstanceOf(
-            soiagen.enums.Status::class.java,
+            skirout.enums.Status::class.java,
         )
         assertThat(
-            soiagen.enums.Status.UNKNOWN,
+            skirout.enums.Status.UNKNOWN,
         ).isInstanceOf(
-            soiagen.enums.Status::class.java,
+            skirout.enums.Status::class.java,
         )
     }
 
     @Test
     fun `test generated enum - toString()`() {
         assertThat(
-            soiagen.enums.Status.OK.toString(),
+            skirout.enums.Status.OK.toString(),
         ).isEqualTo(
             "Status.OK",
         )
         assertThat(
-            soiagen.enums.Status.ErrorWrapper(
-                soiagen.enums.Status.Error(
+            skirout.enums.Status.ErrorWrapper(
+                skirout.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
@@ -625,7 +625,7 @@ class Tests {
                 ")",
         )
         assertThat(
-            soiagen.enums.Status.createError(
+            skirout.enums.Status.createError(
                 code = 100,
                 message = "The Message",
             ).toString(),
@@ -638,7 +638,7 @@ class Tests {
                 ")",
         )
         assertThat(
-            soiagen.enums.Status.UNKNOWN.toString(),
+            skirout.enums.Status.UNKNOWN.toString(),
         ).isEqualTo(
             "Status.UNKNOWN",
         )
@@ -646,30 +646,30 @@ class Tests {
 
     @Test
     fun `test generated enum - equals() and hashCode`() {
-        val set = mutableSetOf<soiagen.enums.Status>()
-        set.add(soiagen.enums.Status.OK)
-        set.add(soiagen.enums.Status.OK)
-        set.add(soiagen.enums.Status.UNKNOWN)
-        set.add(soiagen.enums.Status.UNKNOWN)
+        val set = mutableSetOf<skirout.enums.Status>()
+        set.add(skirout.enums.Status.OK)
+        set.add(skirout.enums.Status.OK)
+        set.add(skirout.enums.Status.UNKNOWN)
+        set.add(skirout.enums.Status.UNKNOWN)
         set.add(
-            soiagen.enums.Status.ErrorWrapper(
-                soiagen.enums.Status.Error(
+            skirout.enums.Status.ErrorWrapper(
+                skirout.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
             ),
         )
         set.add(
-            soiagen.enums.Status.ErrorWrapper(
-                soiagen.enums.Status.Error(
+            skirout.enums.Status.ErrorWrapper(
+                skirout.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
             ),
         )
         set.add(
-            soiagen.enums.Status.ErrorWrapper(
-                soiagen.enums.Status.Error(
+            skirout.enums.Status.ErrorWrapper(
+                skirout.enums.Status.Error(
                     code = 101,
                     message = "The Other Message",
                 ),
@@ -679,16 +679,16 @@ class Tests {
             set,
         ).isEqualTo(
             setOf(
-                soiagen.enums.Status.OK,
-                soiagen.enums.Status.UNKNOWN,
-                soiagen.enums.Status.ErrorWrapper(
-                    soiagen.enums.Status.Error(
+                skirout.enums.Status.OK,
+                skirout.enums.Status.UNKNOWN,
+                skirout.enums.Status.ErrorWrapper(
+                    skirout.enums.Status.Error(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
-                soiagen.enums.Status.ErrorWrapper(
-                    soiagen.enums.Status.Error(
+                skirout.enums.Status.ErrorWrapper(
+                    skirout.enums.Status.Error(
                         code = 101,
                         message = "The Other Message",
                     ),
@@ -697,19 +697,19 @@ class Tests {
         )
     }
 
-    fun `test generated enum - condition on enum`(status: soiagen.enums.Status) {
+    fun `test generated enum - condition on enum`(status: skirout.enums.Status) {
         when (status) {
-            is soiagen.enums.Status.Unknown -> {}
-            is soiagen.enums.Status.OK -> {}
-            is soiagen.enums.Status.ErrorWrapper -> {}
+            is skirout.enums.Status.Unknown -> {}
+            is skirout.enums.Status.OK -> {}
+            is skirout.enums.Status.ErrorWrapper -> {}
         }
     }
 
     @Test
     @Suppress("UNCHECKED_CAST")
     fun `test generated enum - reflection`() {
-        val typeDescriptor: EnumDescriptor.Reflective<soiagen.enums.Status> =
-            soiagen.enums.Status.typeDescriptor
+        val typeDescriptor: EnumDescriptor.Reflective<skirout.enums.Status> =
+            skirout.enums.Status.typeDescriptor
         assertThat(
             typeDescriptor.name,
         ).isEqualTo(
@@ -723,10 +723,10 @@ class Tests {
         assertThat(
             typeDescriptor.modulePath,
         ).isEqualTo(
-            "enums.soia",
+            "enums.skir",
         )
         assertThat(
-            typeDescriptor.fields,
+            typeDescriptor.variants,
         ).hasSize(
             2,
         )
@@ -736,81 +736,81 @@ class Tests {
             setOf(2, 3),
         )
         run {
-            val field = typeDescriptor.getField("error")!!
+            val variant = typeDescriptor.getVariant("error")!!
             assertThat(
-                field,
+                variant,
             ).isInstanceOf(
-                EnumWrapperField.Reflective::class.java,
+                EnumWrapperVariant.Reflective::class.java,
             )
-            field as EnumWrapperField.Reflective<soiagen.enums.Status, soiagen.enums.Status.Error>
+            variant as EnumWrapperVariant.Reflective<skirout.enums.Status, skirout.enums.Status.Error>
             assertThat(
-                field.name,
+                variant.name,
             ).isEqualTo(
                 "error",
             )
             assertThat(
-                field.number,
+                variant.number,
             ).isEqualTo(
                 4,
             )
             assertThat(
-                field.test(
-                    soiagen.enums.Status.createError(
+                variant.test(
+                    skirout.enums.Status.createError(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
             ).isTrue()
             assertThat(
-                field.test(
-                    soiagen.enums.Status.OK,
+                variant.test(
+                    skirout.enums.Status.OK,
                 ),
             ).isFalse()
             assertThat(
-                field.get(
-                    soiagen.enums.Status.createError(
+                variant.get(
+                    skirout.enums.Status.createError(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
             ).isEqualTo(
-                soiagen.enums.Status.Error(
+                skirout.enums.Status.Error(
                     code = 100,
                     message = "The Message",
                 ),
             )
             assertThat(
-                field.wrap(
-                    soiagen.enums.Status.Error(
+                variant.wrap(
+                    skirout.enums.Status.Error(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
             ).isEqualTo(
-                soiagen.enums.Status.createError(
+                skirout.enums.Status.createError(
                     code = 100,
                     message = "The Message",
                 ),
             )
             assertThat(
-                typeDescriptor.getField(
-                    soiagen.enums.Status.createError(
+                typeDescriptor.getVariant(
+                    skirout.enums.Status.createError(
                         code = 100,
                         message = "The Message",
                     ),
                 ),
             ).isEqualTo(
-                field,
+                variant,
             )
         }
         run {
-            val field = typeDescriptor.getField("OK")!!
+            val field = typeDescriptor.getVariant("OK")!!
             assertThat(
                 field,
             ).isInstanceOf(
-                EnumConstantField.Reflective::class.java,
+                EnumConstantVariant.Reflective::class.java,
             )
-            field as EnumConstantField.Reflective<soiagen.enums.Status>
+            field as EnumConstantVariant.Reflective<skirout.enums.Status>
             assertThat(
                 field.name,
             ).isEqualTo(
@@ -824,18 +824,18 @@ class Tests {
             assertThat(
                 field.constant,
             ).isEqualTo(
-                soiagen.enums.Status.OK,
+                skirout.enums.Status.OK,
             )
             assertThat(
-                typeDescriptor.getField(
-                    soiagen.enums.Status.OK,
+                typeDescriptor.getVariant(
+                    skirout.enums.Status.OK,
                 ),
             ).isEqualTo(
                 field,
             )
         }
         run {
-            val field = typeDescriptor.getField(0)!!
+            val field = typeDescriptor.getVariant(0)!!
             assertThat(
                 field.name,
             ).isEqualTo(
@@ -846,15 +846,15 @@ class Tests {
             ).isEqualTo(
                 0,
             )
-            field as EnumConstantField.Reflective<soiagen.enums.Status>
+            field as EnumConstantVariant.Reflective<skirout.enums.Status>
             assertThat(
                 field.constant,
             ).isEqualTo(
-                soiagen.enums.Status.UNKNOWN,
+                skirout.enums.Status.UNKNOWN,
             )
             assertThat(
-                typeDescriptor.getField(
-                    soiagen.enums.Status.UNKNOWN,
+                typeDescriptor.getVariant(
+                    skirout.enums.Status.UNKNOWN,
                 ),
             ).isEqualTo(
                 field,
@@ -865,19 +865,19 @@ class Tests {
     @Test
     fun `test generated struct - serialize and deserialize`() {
         val triangle =
-            soiagen.structs.Triangle(
+            skirout.structs.Triangle(
                 color =
-                    soiagen.structs.Color(
+                    skirout.structs.Color(
                         r = 127,
                         g = 128,
                         b = 139,
                     ),
                 points =
                     listOf(
-                        soiagen.structs.Point.Mutable(x = 1, y = 2),
+                        skirout.structs.Point.Mutable(x = 1, y = 2),
                     ),
             )
-        val serializer = soiagen.structs.Triangle.serializer
+        val serializer = skirout.structs.Triangle.serializer
         assertThat(
             serializer.toJsonCode(triangle),
         ).isEqualTo(
@@ -898,19 +898,19 @@ class Tests {
     @Test
     fun `test generated struct - serialize and deserialize recursive`() {
         val rec =
-            soiagen.structs.RecA.partial(
+            skirout.structs.RecA.partial(
                 a =
-                    soiagen.structs.RecA.partial(
+                    skirout.structs.RecA.partial(
                         b =
-                            soiagen.structs.RecB.partial(
+                            skirout.structs.RecB.partial(
                                 a =
-                                    soiagen.structs.RecA.partial(
+                                    skirout.structs.RecA.partial(
                                         c = true,
                                     ),
                             ),
                     ),
             )
-        val serializer = soiagen.structs.RecA.serializer
+        val serializer = skirout.structs.RecA.serializer
         assertThat(
             serializer.toJsonCode(rec),
         ).isEqualTo(
@@ -931,11 +931,11 @@ class Tests {
     @Test
     fun `test generated enum - serialize and deserialize`() {
         val status =
-            soiagen.enums.Status.createError(
+            skirout.enums.Status.createError(
                 code = 100,
                 message = "The Message",
             )
-        val serializer = soiagen.enums.Status.serializer
+        val serializer = skirout.enums.Status.serializer
         assertThat(
             serializer.toJsonCode(status),
         ).isEqualTo(
@@ -952,50 +952,50 @@ class Tests {
             status,
         )
         assertThat(
-            serializer.fromBytes(serializer.toBytes(soiagen.enums.Status.OK)),
+            serializer.fromBytes(serializer.toBytes(skirout.enums.Status.OK)),
         ).isEqualTo(
-            soiagen.enums.Status.OK,
+            skirout.enums.Status.OK,
         )
         assertThat(
-            serializer.fromBytes(serializer.toBytes(soiagen.enums.Status.UNKNOWN)),
+            serializer.fromBytes(serializer.toBytes(skirout.enums.Status.UNKNOWN)),
         ).isEqualTo(
-            soiagen.enums.Status.UNKNOWN,
+            skirout.enums.Status.UNKNOWN,
         )
     }
 
     @Test
     fun `test generated struct - unrecognized fields - JSON`() {
         val fooAfter =
-            soiagen.schema_change.FooAfter.partial(
+            skirout.schema_change.FooAfter.partial(
                 n = 42,
                 bit = true,
                 bars =
                     listOf(
-                        soiagen.schema_change.BarAfter.partial(
+                        skirout.schema_change.BarAfter.partial(
                             x = 1.0F,
                             s = "bar1",
                         ),
-                        soiagen.schema_change.BarAfter.partial(
+                        skirout.schema_change.BarAfter.partial(
                             x = 2.0F,
                             s = "bar2",
                         ),
                     ),
                 enums =
                     listOf(
-                        soiagen.schema_change.EnumAfter.A,
-                        soiagen.schema_change.EnumAfter.CWrapper("foo"),
-                        soiagen.schema_change.EnumAfter.D,
+                        skirout.schema_change.EnumAfter.A,
+                        skirout.schema_change.EnumAfter.CWrapper("foo"),
+                        skirout.schema_change.EnumAfter.D,
                     ),
             )
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
+        val fooAfterSerializer = skirout.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = skirout.schema_change.FooBefore.serializer
         val jsonCode = fooAfterSerializer.toJsonCode(fooAfter)
         assertThat(jsonCode).isEqualTo("[[[1.0,0,0,\"bar1\"],[2.0,0,0,\"bar2\"]],42,[1,[5,\"foo\"],6],1]")
         assertThat(
             fooBeforeSerializer.toJsonCode(
                 fooBeforeSerializer.fromJsonCode(
                     jsonCode,
-                    UnrecognizedFieldsPolicy.KEEP,
+                    UnrecognizedValuesPolicy.KEEP,
                 ),
             ),
         ).isEqualTo(jsonCode)
@@ -1012,39 +1012,39 @@ class Tests {
     @Test
     fun `test generated struct - unrecognized fields - bytes`() {
         val fooAfter =
-            soiagen.schema_change.FooAfter.partial(
+            skirout.schema_change.FooAfter.partial(
                 n = 42,
                 bit = true,
                 bars =
                     listOf(
-                        soiagen.schema_change.BarAfter.partial(
+                        skirout.schema_change.BarAfter.partial(
                             x = 1.0F,
                             s = "bar1",
                         ),
-                        soiagen.schema_change.BarAfter.partial(
+                        skirout.schema_change.BarAfter.partial(
                             x = 2.0F,
                             s = "bar2",
                         ),
                     ),
                 enums =
                     listOf(
-                        soiagen.schema_change.EnumAfter.A,
-                        soiagen.schema_change.EnumAfter.CWrapper("foo"),
-                        soiagen.schema_change.EnumAfter.D,
+                        skirout.schema_change.EnumAfter.A,
+                        skirout.schema_change.EnumAfter.CWrapper("foo"),
+                        skirout.schema_change.EnumAfter.D,
                     ),
             )
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
+        val fooAfterSerializer = skirout.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = skirout.schema_change.FooBefore.serializer
         val bytes = fooAfterSerializer.toBytes(fooAfter)
         assertThat(fooAfterSerializer.fromBytes(bytes)).isEqualTo(fooAfter)
         assertThat(
             bytes.hex(),
-        ).isEqualTo("736f6961fa04f8fa04f00000803f0000f30462617231fa04f0000000400000f304626172322af901f805f303666f6f0601")
+        ).isEqualTo("736b6972fa04f8fa04f00000803f0000f30462617231fa04f0000000400000f304626172322af901f805f303666f6f0601")
         assertThat(
             fooBeforeSerializer.toBytes(
                 fooBeforeSerializer.fromBytes(
                     bytes,
-                    UnrecognizedFieldsPolicy.KEEP,
+                    UnrecognizedValuesPolicy.KEEP,
                 ),
             ),
         ).isEqualTo(bytes)
@@ -1057,22 +1057,22 @@ class Tests {
             ),
         ).isEqualTo(
             fooBeforeSerializer.toBytes(
-                soiagen.schema_change.FooBefore.partial(
+                skirout.schema_change.FooBefore.partial(
                     bars =
                         listOf(
-                            soiagen.schema_change.BarBefore.partial(
+                            skirout.schema_change.BarBefore.partial(
                                 x = 1.0F,
                             ),
-                            soiagen.schema_change.BarBefore.partial(
+                            skirout.schema_change.BarBefore.partial(
                                 x = 2.0F,
                             ),
                         ),
                     n = 42,
                     enums =
                         listOf(
-                            soiagen.schema_change.EnumBefore.A,
-                            soiagen.schema_change.EnumBefore.UNKNOWN,
-                            soiagen.schema_change.EnumBefore.UNKNOWN,
+                            skirout.schema_change.EnumBefore.A,
+                            skirout.schema_change.EnumBefore.UNKNOWN,
+                            skirout.schema_change.EnumBefore.UNKNOWN,
                         ),
                 ),
             ),
@@ -1082,24 +1082,24 @@ class Tests {
     @Test
     fun `test generated struct - honor removed fields - JSON`() {
         val fooBefore =
-            soiagen.schema_change.FooBefore.partial(
-                bars = listOf(soiagen.schema_change.BarBefore.partial(y = true)),
+            skirout.schema_change.FooBefore.partial(
+                bars = listOf(skirout.schema_change.BarBefore.partial(y = true)),
                 enums =
                     listOf(
-                        soiagen.schema_change.EnumBefore.B,
-                        soiagen.schema_change.EnumBefore.CWrapper("foo"),
+                        skirout.schema_change.EnumBefore.B,
+                        skirout.schema_change.EnumBefore.CWrapper("foo"),
                     ),
             )
 
         // Serialize FooBefore to JSON
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = skirout.schema_change.FooBefore.serializer
+        val fooAfterSerializer = skirout.schema_change.FooAfter.serializer
         val jsonCode = fooBeforeSerializer.toJsonCode(fooBefore)
         assertThat(jsonCode).isEqualTo("[[[0.0,0,1]],0,[3,[4,\"foo\"]]]")
 
         val fooAfter =
             fooAfterSerializer
-                .fromJsonCode(jsonCode, UnrecognizedFieldsPolicy.KEEP)
+                .fromJsonCode(jsonCode, UnrecognizedValuesPolicy.KEEP)
 
         assertThat(fooAfterSerializer.toJsonCode(fooAfter)).isEqualTo("[[[]],0,[0,0]]")
     }
@@ -1107,73 +1107,73 @@ class Tests {
     @Test
     fun `test generated struct - honor removed fields - bytes`() {
         val fooBefore =
-            soiagen.schema_change.FooBefore.partial(
-                bars = listOf(soiagen.schema_change.BarBefore.partial(y = true)),
+            skirout.schema_change.FooBefore.partial(
+                bars = listOf(skirout.schema_change.BarBefore.partial(y = true)),
                 enums =
                     listOf(
-                        soiagen.schema_change.EnumBefore.B,
-                        soiagen.schema_change.EnumBefore.CWrapper("foo"),
+                        skirout.schema_change.EnumBefore.B,
+                        skirout.schema_change.EnumBefore.CWrapper("foo"),
                     ),
             )
 
         // Serialize FooBefore to JSON
-        val fooBeforeSerializer = soiagen.schema_change.FooBefore.serializer
-        val fooAfterSerializer = soiagen.schema_change.FooAfter.serializer
+        val fooBeforeSerializer = skirout.schema_change.FooBefore.serializer
+        val fooAfterSerializer = skirout.schema_change.FooAfter.serializer
         val bytes = fooBeforeSerializer.toBytes(fooBefore)
-        assertThat(bytes.hex()).isEqualTo("736f6961f9f7f900000100f803fef303666f6f")
+        assertThat(bytes.hex()).isEqualTo("736b6972f9f7f900000100f803fef303666f6f")
 
         val fooAfter =
             fooAfterSerializer
-                .fromBytes(bytes, UnrecognizedFieldsPolicy.KEEP)
+                .fromBytes(bytes, UnrecognizedValuesPolicy.KEEP)
 
-        assertThat(fooAfterSerializer.toBytes(fooAfter).hex()).isEqualTo("736f6961f9f7f600f80000")
+        assertThat(fooAfterSerializer.toBytes(fooAfter).hex()).isEqualTo("736b6972f9f7f600f80000")
     }
 
     @Test
     fun `test generated constant`() {
         assertThat(
-            soiagen.constants.ONE_SINGLE_QUOTED_STRING,
+            skirout.constants.ONE_SINGLE_QUOTED_STRING,
         ).isEqualTo(
             "\"Foo\"",
         )
         assertThat(
-            soiagen.constants.ONE_CONSTANT,
+            skirout.constants.ONE_CONSTANT,
         ).isEqualTo(
-            soiagen.enums.JsonValue.ArrayWrapper(
+            skirout.enums.JsonValue.ArrayWrapper(
                 listOf(
-                    soiagen.enums.JsonValue.BooleanWrapper(
+                    skirout.enums.JsonValue.BooleanWrapper(
                         true,
                     ),
-                    soiagen.enums.JsonValue.NumberWrapper(
+                    skirout.enums.JsonValue.NumberWrapper(
                         3.14,
                     ),
-                    soiagen.enums.JsonValue.StringWrapper(
+                    skirout.enums.JsonValue.StringWrapper(
                         "\n" +
                             "        foo\n" +
                             "        bar",
                     ),
-                    soiagen.enums.JsonValue.ObjectWrapper(
+                    skirout.enums.JsonValue.ObjectWrapper(
                         listOf(
-                            soiagen.enums.JsonValue.Pair(
+                            skirout.enums.JsonValue.Pair(
                                 name = "foo",
-                                value = soiagen.enums.JsonValue.NULL,
+                                value = skirout.enums.JsonValue.NULL,
                             ),
                         ),
                     ),
                 ),
             ),
         )
-        assertThat(soiagen.constants.INFINITY).isEqualTo(Float.POSITIVE_INFINITY)
-        assertThat(soiagen.constants.NEGATIVE_INFINITY).isEqualTo(Float.NEGATIVE_INFINITY)
-        assertThat(soiagen.constants.NAN).isEqualTo(Double.NaN)
-        assertThat(soiagen.constants.LARGE_INT64).isEqualTo(9223372036854775807)
-        assertThat(soiagen.constants.PI).isEqualTo(3.141592653589793)
+        assertThat(skirout.constants.INFINITY).isEqualTo(Float.POSITIVE_INFINITY)
+        assertThat(skirout.constants.NEGATIVE_INFINITY).isEqualTo(Float.NEGATIVE_INFINITY)
+        assertThat(skirout.constants.NAN).isEqualTo(Double.NaN)
+        assertThat(skirout.constants.LARGE_INT64).isEqualTo(9223372036854775807)
+        assertThat(skirout.constants.PI).isEqualTo(3.141592653589793)
     }
 
     @Test
     fun `test generated methods`() {
         assertThat(
-            soiagen.methods.WithExplicitNumber.number,
+            skirout.methods.WithExplicitNumber.number,
         ).isEqualTo(
             3,
         )
@@ -1182,23 +1182,23 @@ class Tests {
 
 class ServiceImpl {
     private fun myProcedure(
-        point: soiagen.structs.Point,
+        point: skirout.structs.Point,
         requestHeaders: HttpHeaders,
-    ): soiagen.enums.JsonValue {
-        return soiagen.enums.JsonValue.StringWrapper("FOO x:${point.x}")
+    ): skirout.enums.JsonValue {
+        return skirout.enums.JsonValue.StringWrapper("FOO x:${point.x}")
     }
 
     val service by lazy {
         Service.builder()
-            .addMethod(soiagen.methods.MyProcedure) { req, reqMeta -> myProcedure(req, reqMeta) }
+            .addMethod(skirout.methods.MyProcedure) { req, reqMeta -> myProcedure(req, reqMeta) }
             .build()
     }
 }
 
-const val INFINITY = soiagen.constants.INFINITY
-const val NEGATIVE_INFINITY = soiagen.constants.NEGATIVE_INFINITY
-const val NAN = soiagen.constants.NAN
-const val LARGE_INT64 = soiagen.constants.LARGE_INT64
-const val PI = soiagen.constants.PI
-const val ONE_BOOL = soiagen.constants.ONE_BOOL
-const val ONE_SINGLE_QUOTED_STRING = soiagen.constants.ONE_SINGLE_QUOTED_STRING
+const val INFINITY = skirout.constants.INFINITY
+const val NEGATIVE_INFINITY = skirout.constants.NEGATIVE_INFINITY
+const val NAN = skirout.constants.NAN
+const val LARGE_INT64 = skirout.constants.LARGE_INT64
+const val PI = skirout.constants.PI
+const val ONE_BOOL = skirout.constants.ONE_BOOL
+const val ONE_SINGLE_QUOTED_STRING = skirout.constants.ONE_SINGLE_QUOTED_STRING

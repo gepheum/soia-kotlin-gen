@@ -11,6 +11,7 @@
     "noUncheckedIndexedAccess": true,
     "isolatedModules": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
   },

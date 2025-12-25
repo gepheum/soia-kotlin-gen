@@ -1,26 +1,26 @@
-import { Field, RecordLocation, convertCase } from "soiac";
+import { type Field, type RecordLocation, convertCase } from "skir-internal";
 
 export class Namer {
   private readonly genPackageFirstName: string;
 
   constructor(private readonly packagePrefix: string) {
     if (packagePrefix.length <= 0) {
-      this.genPackageFirstName = "soiagen";
+      this.genPackageFirstName = "skirout";
     } else {
       this.genPackageFirstName = packagePrefix.split(".")[0]!;
     }
   }
 
   structFieldToKotlinName(field: Field | string): string {
-    const soiaName = typeof field === "string" ? field : field.name.text;
-    const lowerCamel = convertCase(soiaName, "lower_underscore", "lowerCamel");
+    const skirName = typeof field === "string" ? field : field.name.text;
+    const lowerCamel = convertCase(skirName, "lowerCamel");
     const nameConflict =
       KOTLIN_HARD_KEYWORDS.has(lowerCamel) ||
       TOP_LEVEL_PACKAGE_NAMES.has(lowerCamel) ||
       KOTLIN_OBJECT_SYMBOLS.has(lowerCamel) ||
       GENERATED_STRUCT_SYMBOLS.has(lowerCamel) ||
       lowerCamel === this.genPackageFirstName ||
-      soiaName.startsWith("mutable_");
+      skirName.startsWith("mutable_");
     return nameConflict ? lowerCamel + "_" : lowerCamel;
   }
 
@@ -45,8 +45,8 @@ export class Namer {
     const name = parts.at(-1)!;
 
     const path = record.modulePath;
-    const importPath = path.replace(/\.soia$/, "").replace("/", ".");
-    const qualifiedName = `${this.packagePrefix}soiagen.${importPath}.${parts.join(".")}`;
+    const importPath = path.replace(/\.skir$/, "").replace("/", ".");
+    const qualifiedName = `${this.packagePrefix}skirout.${importPath}.${parts.join(".")}`;
 
     return { name, qualifiedName };
   }
@@ -103,6 +103,7 @@ const KOTLIN_HARD_KEYWORDS: ReadonlySet<string> = new Set([
 ]);
 
 const TOP_LEVEL_PACKAGE_NAMES: ReadonlySet<string> = new Set<string>([
+  "build",
   "java",
   "kotlin",
   "okio",
@@ -130,7 +131,7 @@ export interface ClassName {
   name: string;
   /**
    * Fully qualified class name.
-   * Examples: 'soiagen.Foo', 'soiagen.Foo.Bar'
+   * Examples: 'skirout.Foo', 'skirout.Foo.Bar'
    */
   qualifiedName: string;
 }

@@ -1,1 +1,1 @@
-rootProject.name = "soia-kotlin-generator-e2e-test"
+rootProject.name = "skir-kotlin-generator-e2e-test"
