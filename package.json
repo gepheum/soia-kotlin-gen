@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "format-skir": "cd e2e-test && skir format fix && cd ..",
+    "format-skir": "cd e2e-test && skir format && cd ..",
     "format-skir:check": "cd e2e-test && skir format check && cd ..",
     "format-kotlin": "cd e2e-test && ./gradlew ktlintFormat && cd ..",
     "format-kotlin:check": "cd e2e-test && ./gradlew ktlintCheck && cd ..",
