@@ -427,7 +427,9 @@ class KotlinSourceFileGenerator {
     const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(
+      commentify([docToCommentText(record.record.doc), "\nDeeply immutable."]),
       `sealed class ${className.name} private constructor() {\n`,
+      `/** The kind of variant held by a \`${className.name}\`. */\n`,
       "enum class Kind {\n", //
       "UNKNOWN,\n",
     );
@@ -460,6 +462,7 @@ class KotlinSourceFileGenerator {
       const kindExpr = `Kind.${constantVariant.name.text}_CONST`;
       const constantName = toEnumConstantName(constantVariant);
       this.push(
+        commentify(docToCommentText(constantVariant.doc)),
         `object ${constantName} : ${qualifiedName}() {\n`,
         `override val kind get() = ${kindExpr};\n\n`,
         "init {\n",
@@ -479,6 +482,7 @@ class KotlinSourceFileGenerator {
         .getKotlinType(valueType, "frozen")
         .toString();
       this.pushEol();
+      this.push(commentify(docToCommentText(wrapperVariant.doc)));
       if (initializerType === frozenType) {
         this.push(
           `class ${wrapperClassName}(\n`,
@@ -522,6 +526,10 @@ class KotlinSourceFileGenerator {
       ")\n",
       "}\n\n",
       "companion object {\n",
+      commentify([
+        `Constant indicating an unknown [${className.name}].`,
+        `Default value for fields of type [${className.name}].`,
+      ]),
       'val UNKNOWN = @kotlin.Suppress("DEPRECATION") Unknown(null);\n\n',
     );
     for (const wrapperVariant of wrapperVariants) {
@@ -570,7 +578,9 @@ class KotlinSourceFileGenerator {
       'wrapUnrecognized = { @kotlin.Suppress("DEPRECATION") Unknown(it) },\n',
       "getUnrecognized = { it._unrecognized },\n)",
       ";\n\n",
+      `/** Serializer for [${className.name}] instances. */\n`,
       "val serializer = build.skir.internal.makeSerializer(_serializerImpl);\n\n",
+      `/** Describes the [${className.name}] type. Provides runtime introspection capabilities. */\n`,
       "val typeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
