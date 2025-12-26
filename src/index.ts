@@ -1,6 +1,9 @@
+// TODO: add comments
+
 import {
   type CodeGenerator,
   type Constant,
+  Doc,
   type Field,
   type Method,
   type Module,
@@ -131,11 +134,13 @@ class KotlinSourceFileGenerator {
         "maybe-mutable",
         allRecordsFrozen,
       );
+      this.push(commentify(docToCommentText(field.doc)));
       this.push(`val ${fieldName}: ${type};\n`);
     }
     this.push(`\nfun toFrozen(): ${qualifiedName};\n`);
     this.push(
       "}\n\n", // class _OrMutable
+      commentify([docToCommentText(struct.record.doc), "\nDeeply immutable."]),
       '@kotlin.Suppress("UNUSED_PARAMETER")\n',
       `class ${className.name} private constructor(\n`,
     );
@@ -186,6 +191,7 @@ class KotlinSourceFileGenerator {
       ") {}\n\n",
       '@kotlin.Deprecated("Already frozen", kotlin.ReplaceWith("this"))\n',
       "override fun toFrozen() = this;\n\n",
+      "/** Returns a mutable shallow copy of this instance */\n",
       `fun toMutable() = Mutable(\n`,
     );
     for (const field of fields) {
@@ -196,6 +202,7 @@ class KotlinSourceFileGenerator {
 
     if (fields.length) {
       this.push(
+        "/** Returns a shallow copy of this instance with the specified fields replaced. */\n",
         "fun copy(\n",
         "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
       );
@@ -240,6 +247,7 @@ class KotlinSourceFileGenerator {
       "}\n\n",
     );
     this.push(
+      `/** Mutable version of [${className.name}]. */\n`,
       `class Mutable internal constructor(\n`,
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
@@ -258,6 +266,7 @@ class KotlinSourceFileGenerator {
       `internal var _unrecognizedFields: _UnrecognizedFields<${qualifiedName}>? =\n`,
       "null,\n",
       `): ${qualifiedName}_OrMutable {\n`,
+      "/** Returns a deeply immutable copy of this instance */\n",
       `override fun toFrozen() = ${qualifiedName}(\n`,
     );
     for (const field of fields) {
@@ -285,7 +294,13 @@ class KotlinSourceFileGenerator {
     }
     this.push(
       ");\n\n",
+      "/** Returns an instance with all fields set to their default values. */\n",
       "fun partial() = default;\n\n",
+      "/**\n",
+      ` * Creates a new instance of [${className.name}].\n`,
+      " * Unlike the constructor, does not require all fields to be specified.\n",
+      " * Missing fields will be set to their default values.\n",
+      " */\n",
       "fun partial(\n",
       "_mustNameArguments: _MustNameArguments =\n_MustNameArguments,\n",
     );
@@ -312,7 +327,9 @@ class KotlinSourceFileGenerator {
       "getUnrecognizedFields = { it._unrecognizedFields },\n",
       "setUnrecognizedFields = { m, u -> m._unrecognizedFields = u },\n",
       ");\n\n",
+      `/** Serializer for [${className.name}] instances. */\n`,
       "val serializer = build.skir.internal.makeSerializer(serializerImpl);\n\n",
+      `/** Describes the [${className.name}] type. Provides runtime introspection capabilities. */\n`,
       "val typeDescriptor get() = serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
@@ -386,6 +403,10 @@ class KotlinSourceFileGenerator {
       }
       if (bodyLines.length) {
         this.push(
+          "/**\n",
+          ` * If the value of [${fieldName}] is already mutable, returns it as-is.\n`,
+          ` * Otherwise, makes a mutable copy, assigns it back to [${fieldName}] and returns it.\n`,
+          ` */\n`,
           `val ${mutableGetterName}: ${mutableType} get() {\n`,
           `var value = ${accessor};\n`,
         );
@@ -400,9 +421,9 @@ class KotlinSourceFileGenerator {
   private writeClassForEnum(record: RecordLocation): void {
     const { namer, typeSpeller } = this;
     const { recordMap } = typeSpeller;
-    const { fields } = record.record;
-    const constantVariants = fields.filter((f) => !f.type);
-    const wrapperVariants = fields.filter((f) => f.type);
+    const { fields: variants } = record.record;
+    const constantVariants = variants.filter((v) => !v.type);
+    const wrapperVariants = variants.filter((v) => v.type);
     const className = namer.getClassName(record);
     const qualifiedName = className.qualifiedName;
     this.push(
@@ -410,12 +431,12 @@ class KotlinSourceFileGenerator {
       "enum class Kind {\n", //
       "UNKNOWN,\n",
     );
-    for (const field of constantVariants) {
-      this.push(`${field.name.text}_CONST,\n`);
+    for (const variant of constantVariants) {
+      this.push(`${variant.name.text}_CONST,\n`);
     }
-    for (const field of wrapperVariants) {
+    for (const variant of wrapperVariants) {
       this.push(
-        convertCase(field.name.text, "UPPER_UNDERSCORE"),
+        convertCase(variant.name.text, "UPPER_UNDERSCORE"),
         "_WRAPPER,\n",
       );
     }
@@ -435,9 +456,9 @@ class KotlinSourceFileGenerator {
       "}\n\n",
       "}\n\n", // class Unknown
     );
-    for (const constField of constantVariants) {
-      const kindExpr = `Kind.${constField.name.text}_CONST`;
-      const constantName = toEnumConstantName(constField);
+    for (const constantVariant of constantVariants) {
+      const kindExpr = `Kind.${constantVariant.name.text}_CONST`;
+      const constantName = toEnumConstantName(constantVariant);
       this.push(
         `object ${constantName} : ${qualifiedName}() {\n`,
         `override val kind get() = ${kindExpr};\n\n`,
@@ -447,10 +468,10 @@ class KotlinSourceFileGenerator {
         `}\n\n`, // object
       );
     }
-    for (const wrapperField of wrapperVariants) {
-      const valueType = wrapperField.type!;
+    for (const wrapperVariant of wrapperVariants) {
+      const valueType = wrapperVariant.type!;
       const wrapperClassName =
-        convertCase(wrapperField.name.text, "UpperCamel") + "Wrapper";
+        convertCase(wrapperVariant.name.text, "UpperCamel") + "Wrapper";
       const initializerType = typeSpeller
         .getKotlinType(valueType, "initializer")
         .toString();
@@ -476,7 +497,7 @@ class KotlinSourceFileGenerator {
       }
       const kindExpr =
         "Kind." +
-        convertCase(wrapperField.name.text, "UPPER_UNDERSCORE") +
+        convertCase(wrapperVariant.name.text, "UPPER_UNDERSCORE") +
         "_WRAPPER";
       this.push(
         `override val kind get() = ${kindExpr};\n\n`,
@@ -485,7 +506,7 @@ class KotlinSourceFileGenerator {
         "}\n\n",
         "override fun hashCode(): kotlin.Int {\n",
         "return this.value.hashCode() + ",
-        String(simpleHash(wrapperField.name.text) | 0),
+        String(simpleHash(wrapperVariant.name.text) | 0),
         ";\n",
         "}\n\n",
         "}\n\n", // class
@@ -503,8 +524,8 @@ class KotlinSourceFileGenerator {
       "companion object {\n",
       'val UNKNOWN = @kotlin.Suppress("DEPRECATION") Unknown(null);\n\n',
     );
-    for (const wrapperField of wrapperVariants) {
-      const type = wrapperField.type!;
+    for (const wrapperVariant of wrapperVariants) {
+      const type = wrapperVariant.type!;
       if (type.kind !== "record") {
         continue;
       }
@@ -515,9 +536,9 @@ class KotlinSourceFileGenerator {
       }
       const structClassName = namer.getClassName(structLocation);
       const createFunName =
-        "create" + convertCase(wrapperField.name.text, "UpperCamel");
+        "create" + convertCase(wrapperVariant.name.text, "UpperCamel");
       const wrapperClassName =
-        convertCase(wrapperField.name.text, "UpperCamel") + "Wrapper";
+        convertCase(wrapperVariant.name.text, "UpperCamel") + "Wrapper";
       this.push(
         '@kotlin.Suppress("UNUSED_PARAMETER")\n',
         `fun ${createFunName}(\n`,
@@ -553,8 +574,8 @@ class KotlinSourceFileGenerator {
       "val typeDescriptor get() = _serializerImpl.typeDescriptor;\n\n",
       "init {\n",
     );
-    for (const constField of constantVariants) {
-      this.push(toEnumConstantName(constField), ";\n");
+    for (const constantVariant of constantVariants) {
+      this.push(toEnumConstantName(constantVariant), ";\n");
     }
     this.push("_maybeFinalizeSerializer();\n");
     this.push(
@@ -630,6 +651,7 @@ class KotlinSourceFileGenerator {
       method.responseType!,
     );
     this.push(
+      commentify(docToCommentText(method.doc)),
       `val ${methodName}: build.skir.service.Method<\n${requestType},\n${responseType},\n> by kotlin.lazy {\n`,
       "build.skir.service.Method(\n",
       `"${methodName}",\n`,
@@ -688,6 +710,7 @@ class KotlinSourceFileGenerator {
           return undefined;
       }
     };
+    this.push(commentify(docToCommentText(constant.doc)));
     const kotlinConstLiteral = tryGetKotlinConstLiteral();
     if (kotlinConstLiteral !== undefined) {
       this.push(
@@ -865,9 +888,12 @@ class KotlinSourceFileGenerator {
           break;
         }
       }
-      const indent = indentUnit.repeat(contextStack.length);
+      const indent =
+        indentUnit.repeat(contextStack.length) +
+        (line.startsWith("*") ? " " : "");
       result += `${indent}${line.trimEnd()}\n`;
-      if (line.startsWith("//")) {
+      if (line.startsWith("/") || line.startsWith("*")) {
+        // A comment.
         continue;
       }
       const lastChar = line.slice(-1);
@@ -937,10 +963,38 @@ function toKotlinStringLiteral(input: string): string {
     .replace(/\r/g, "\\r") // Escape carriage returns
     .replace(/\t/g, "\\t") // Escape tabs
     .replace(/\$/g, "\\$"); // Escape $ to prevent unwanted interpolation
-
   return `"${escaped}"`;
+}
 
-  return `"${escaped}"`;
+function commentify(textOrLines: string | readonly string[]): string {
+  const text = (
+    typeof textOrLines === "string" ? textOrLines : textOrLines.join("\n")
+  )
+    .trim()
+    .replace(/\n{3,}/g, "\n\n")
+    .replace("*/", "* /");
+  if (text.length <= 0) {
+    return "";
+  }
+  const lines = text.split("\n");
+  if (lines.length === 1) {
+    return `/** ${text} */\n`;
+  } else {
+    return ["/**\n", ...lines.map((line) => ` * ${line}\n`), " */\n"].join("");
+  }
+}
+
+function docToCommentText(doc: Doc): string {
+  return doc.pieces
+    .map((p) => {
+      switch (p.kind) {
+        case "text":
+          return p.text;
+        case "reference":
+          return "`" + p.referenceRange.text.slice(1, -1) + "`";
+      }
+    })
+    .join("");
 }
 
 export const GENERATOR = new KotlinCodeGenerator();
